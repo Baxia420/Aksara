@@ -1,65 +1,320 @@
-import Image from "next/image";
+"use client";
+
+import Link from "next/link";
+import { useRouter } from "next/navigation";
+import { type FormEvent, useState } from "react";
+import { ArrowRight, TriangleAlert } from "lucide-react";
+
+const loginHighlights = [
+  {
+    label: "01",
+    title: "Sprint Timeline",
+    copy: "Assignments, quizzes, and finals in one week-aware surface.",
+  },
+  {
+    label: "02",
+    title: "Group + Solo",
+    copy: "Track both your group work and personal assignments.",
+  },
+  {
+    label: "03",
+    title: "Calmly Urgent",
+    copy: "Color-coded pressure, but never alarmist.",
+  },
+];
+
+function BrandMark() {
+  return (
+    <div className="flex items-center gap-3">
+      <div className="flex size-14 items-center justify-center rounded-2xl bg-[#83103e] text-[#e2a22f] shadow-[0_12px_28px_rgba(131,16,62,0.18)]">
+        <TriangleAlert className="size-6 stroke-[2.2]" />
+      </div>
+      <div>
+        <p className="aksara-serif text-[2rem] font-semibold leading-none text-[#83103e]">
+          Aksara
+        </p>
+        <p className="aksara-mono mt-1 text-[0.58rem] text-[#b07a88]">
+          Academic OS
+        </p>
+      </div>
+    </div>
+  );
+}
+
+function LoginForm({ mobile = false }: { mobile?: boolean }) {
+  const router = useRouter();
+  const [username, setUsername] = useState("");
+  const [password, setPassword] = useState("");
+  const [error, setError] = useState<string | null>(null);
+  const [isSubmitting, setIsSubmitting] = useState(false);
+  const errorId = mobile ? "login-error-mobile" : "login-error-desktop";
+
+  async function handleSubmit(event: FormEvent<HTMLFormElement>) {
+    event.preventDefault();
+    setError(null);
+    setIsSubmitting(true);
+
+    try {
+      const response = await fetch("/api/login", {
+        method: "POST",
+        headers: {
+          "Content-Type": "application/json",
+        },
+        body: JSON.stringify({ password, username }),
+      });
+
+      if (!response.ok) {
+        const data = (await response
+          .json()
+          .catch(() => ({}))) as { message?: string };
+        setError(data.message ?? "Invalid username or password.");
+        return;
+      }
+
+      router.push("/dashboard");
+    } catch {
+      setError("Unable to sign in right now.");
+    } finally {
+      setIsSubmitting(false);
+    }
+  }
+
+  return (
+    <div
+      className={`aksara-card relative w-full rounded-[2rem] ${
+        mobile
+          ? "max-w-[25rem] px-6 py-6"
+          : "max-w-[35rem] px-7 py-8 sm:px-10 sm:py-10"
+      }`}
+    >
+      {mobile ? null : (
+        <div className="flex items-center justify-between gap-4">
+          <p className="aksara-mono text-[0.62rem] text-[#b34973]">Sign In</p>
+          <div className="rounded-full border border-[#ecd9dd] bg-white px-4 py-2 text-[0.62rem] font-semibold uppercase tracking-[0.28em] text-[#9a7d86]">
+            Secure / Acid
+          </div>
+        </div>
+      )}
+
+      {!mobile ? (
+        <div className="mt-6">
+          <h2 className="aksara-serif text-[3.2rem] leading-[0.85] text-[#2a1820] sm:text-[4rem]">
+            Welcome
+            <br />
+            <span className="italic text-[#a31657]">back.</span>
+          </h2>
+        </div>
+      ) : null}
+
+      <form
+        className={`${mobile ? "mt-5 space-y-4" : "mt-7 space-y-5"}`}
+        onSubmit={handleSubmit}
+      >
+        <label className="block">
+          <span
+            className={`aksara-mono mb-2 block text-[#91727d] ${
+              mobile ? "text-[0.55rem]" : "text-[0.62rem]"
+            }`}
+          >
+            Username / UTMID
+          </span>
+          <input
+            autoComplete="username"
+            name="username"
+            onChange={(event) => setUsername(event.target.value)}
+            required
+            type="text"
+            value={username}
+            placeholder="Boleh"
+            className={`w-full rounded-[1.15rem] border border-[#efdde1] bg-white font-semibold text-[#433139] outline-none transition focus:border-[#d6a534] ${
+              mobile ? "px-5 py-3.5 text-base" : "px-5 py-4 text-lg"
+            }`}
+          />
+        </label>
+
+        <label className="block">
+          <div className="mb-2 flex items-center justify-between gap-4">
+            <span
+              className={`aksara-mono block text-[#91727d] ${
+                mobile ? "text-[0.55rem]" : "text-[0.62rem]"
+              }`}
+            >
+              Password
+            </span>
+            <Link
+              href="/forgot-password"
+              className={`font-semibold text-[#83103e] transition hover:text-[#57102b] ${
+                mobile ? "text-[0.92rem]" : "text-sm"
+              }`}
+            >
+              Forgot Password
+            </Link>
+          </div>
+          <input
+            aria-describedby={error ? errorId : undefined}
+            aria-invalid={error ? "true" : "false"}
+            autoComplete="current-password"
+            name="password"
+            onChange={(event) => setPassword(event.target.value)}
+            required
+            type="password"
+            value={password}
+            placeholder="Password"
+            className={`w-full rounded-[1.15rem] border border-[#efdde1] bg-white font-semibold text-[#433139] outline-none transition focus:border-[#d6a534] ${
+              mobile ? "px-5 py-3.5 text-base" : "px-5 py-4 text-lg"
+            }`}
+          />
+        </label>
+
+        {error ? (
+          <p id={errorId} className="text-sm font-semibold text-[#a31657]">
+            {error}
+          </p>
+        ) : null}
+
+        {!mobile ? (
+          <label className="flex items-center gap-3 text-base text-[#68555f]">
+            <input
+              type="checkbox"
+              defaultChecked
+              className="size-4 accent-[#83103e]"
+            />
+            <span>Keep me signed in on this device</span>
+          </label>
+        ) : null}
+
+        <div className={`grid ${mobile ? "pt-1" : "gap-3 pt-1"}`}>
+          <button
+            disabled={isSubmitting}
+            type="submit"
+            className={`aksara-primary-button flex items-center justify-center gap-3 rounded-[1rem] font-semibold text-[#fff6f8] transition disabled:cursor-not-allowed disabled:opacity-70 ${
+              mobile ? "px-5 py-3.5 text-base" : "px-5 py-4 text-lg"
+            }`}
+          >
+            {isSubmitting ? "Signing in..." : "Login"}
+            <ArrowRight className="size-5" />
+          </button>
+        </div>
+      </form>
+
+      {!mobile ? (
+        <p className="mt-8 text-center text-sm leading-6 text-[#826c75]">
+          Protected academic environment. By signing in you agree to the
+          <Link
+            href="/acceptable-use-policy"
+            className="font-semibold text-[#a31657] transition hover:text-[#83103e]"
+          >
+            {" "}
+            Acceptable Use Policy
+          </Link>
+          {" "}and{" "}
+          <Link
+            href="/privacy-notice"
+            className="font-semibold text-[#a31657] transition hover:text-[#83103e]"
+          >
+            Privacy Notice
+          </Link>
+          .
+        </p>
+      ) : null}
+    </div>
+  );
+}
 
 export default function Home() {
   return (
-    <div className="flex flex-col flex-1 items-center justify-center bg-zinc-50 font-sans dark:bg-black">
-      <main className="flex flex-1 w-full max-w-3xl flex-col items-center justify-between py-32 px-16 bg-white dark:bg-black sm:items-start">
-        <Image
-          className="dark:invert"
-          src="/next.svg"
-          alt="Next.js logo"
-          width={100}
-          height={20}
-          priority
-        />
-        <div className="flex flex-col items-center gap-6 text-center sm:items-start sm:text-left">
-          <h1 className="max-w-xs text-3xl font-semibold leading-10 tracking-tight text-black dark:text-zinc-50">
-            To get started, edit the page.tsx file.
+    <main className="min-h-screen px-4 py-4 lg:px-8 lg:py-7">
+      <div className="mx-auto hidden min-h-[calc(100vh-2rem)] max-w-[95rem] flex-col lg:flex">
+        <header className="flex items-center justify-between text-[0.95rem] text-[#725d67]">
+          <BrandMark />
+          <div className="flex items-center gap-8">
+            <p className="aksara-mono text-[0.72rem] text-[#8f7881]">
+              Sem 2 / 2025/26
+            </p>
+            <p>Need help?</p>
+          </div>
+        </header>
+
+        <div className="mt-10 grid flex-1 grid-cols-[1.02fr_0.98fr] gap-14">
+          <section className="flex flex-col justify-between pb-5">
+            <div>
+              <p className="aksara-mono text-[0.7rem] text-[#a14a6a]">
+                Aksara / Academic Operating System
+              </p>
+              <h1 className="aksara-serif mt-8 max-w-[46rem] text-[6.8rem] leading-[0.87] tracking-[-0.03em] text-[#24161d]">
+                A quiet place to
+                <br />
+                <span className="italic text-[#9b174b]">think,</span>
+                <br />
+                plan, and
+                <br />
+                <span className="italic text-[#9b174b]">finish.</span>
+              </h1>
+              <p className="mt-6 max-w-[37rem] text-[1.55rem] leading-10 text-[#65535c]">
+                Your private academic command center. Assignments, tutorials,
+                group sprints, and exam dates gathered into one calm surface.
+              </p>
+            </div>
+
+            <div>
+              <div className="mt-10 grid max-w-[43rem] grid-cols-3 gap-4">
+                {loginHighlights.map((item) => (
+                  <article key={item.label} className="aksara-soft-card p-6">
+                    <p className="aksara-mono text-[0.56rem] text-[#d6a534]">
+                      {item.label}
+                    </p>
+                    <h2 className="aksara-serif mt-4 text-[2rem] leading-none text-[#2b1b22]">
+                      {item.title}
+                    </h2>
+                    <p className="mt-3 text-[1.05rem] leading-7 text-[#66525b]">
+                      {item.copy}
+                    </p>
+                  </article>
+                ))}
+              </div>
+
+              <div className="mt-10 pr-10 text-[#8d7880]">
+                <p className="text-sm font-medium tracking-[0.04em] text-[#7d6872]">
+                  Copyright 2026 Jobayer Alam. All rights reserved.
+                </p>
+              </div>
+            </div>
+          </section>
+
+          <section className="relative flex items-center justify-center px-8">
+            <div className="aksara-stage absolute inset-x-6 inset-y-12" />
+            <LoginForm />
+          </section>
+        </div>
+      </div>
+
+      <div className="mx-auto flex min-h-[100svh] max-w-[28rem] flex-col px-2 pt-2 lg:hidden">
+        <header className="pt-5">
+          <BrandMark />
+        </header>
+
+        <div className="mt-10">
+          <p className="aksara-mono text-[0.7rem] text-[#a14a6a]">Sign In</p>
+          <h1 className="aksara-serif mt-4 text-[4.2rem] leading-[0.84] tracking-[-0.04em] text-[#24161d]">
+            Welcome
+            <br />
+            <span className="italic text-[#9b174b]">back.</span>
           </h1>
-          <p className="max-w-md text-lg leading-8 text-zinc-600 dark:text-zinc-400">
-            Looking for a starting point or more instructions? Head over to{" "}
-            <a
-              href="https://vercel.com/templates?framework=next.js&utm_source=create-next-app&utm_medium=appdir-template-tw&utm_campaign=create-next-app"
-              className="font-medium text-zinc-950 dark:text-zinc-50"
-            >
-              Templates
-            </a>{" "}
-            or the{" "}
-            <a
-              href="https://nextjs.org/learn?utm_source=create-next-app&utm_medium=appdir-template-tw&utm_campaign=create-next-app"
-              className="font-medium text-zinc-950 dark:text-zinc-50"
-            >
-              Learning
-            </a>{" "}
-            center.
+          <p className="mt-4 max-w-[15rem] text-[1.4rem] leading-8 text-[#615058]">
+            Your assignments are witing for you
           </p>
         </div>
-        <div className="flex flex-col gap-4 text-base font-medium sm:flex-row">
-          <a
-            className="flex h-12 w-full items-center justify-center gap-2 rounded-full bg-foreground px-5 text-background transition-colors hover:bg-[#383838] dark:hover:bg-[#ccc] md:w-[158px]"
-            href="https://vercel.com/new?utm_source=create-next-app&utm_medium=appdir-template-tw&utm_campaign=create-next-app"
-            target="_blank"
-            rel="noopener noreferrer"
-          >
-            <Image
-              className="dark:invert"
-              src="/vercel.svg"
-              alt="Vercel logomark"
-              width={16}
-              height={16}
-            />
-            Deploy Now
-          </a>
-          <a
-            className="flex h-12 w-full items-center justify-center rounded-full border border-solid border-black/[.08] px-5 transition-colors hover:border-transparent hover:bg-black/[.04] dark:border-white/[.145] dark:hover:bg-[#1a1a1a] md:w-[158px]"
-            href="https://nextjs.org/docs?utm_source=create-next-app&utm_medium=appdir-template-tw&utm_campaign=create-next-app"
-            target="_blank"
-            rel="noopener noreferrer"
-          >
-            Documentation
-          </a>
+
+        <div className="mt-8">
+          <LoginForm mobile />
         </div>
-      </main>
-    </div>
+
+        <footer className="mt-auto px-2 pb-8 pt-8 text-center">
+          <p className="text-[0.88rem] font-medium tracking-[0.04em] text-[#7d6872]">
+            Copyright 2026 Jobayer Alam. All rights reserved.
+          </p>
+        </footer>
+      </div>
+    </main>
   );
 }

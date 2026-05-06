@@ -4,6 +4,7 @@ import {
   IBM_Plex_Mono,
   Manrope,
 } from "next/font/google";
+import { Analytics } from "@vercel/analytics/next";
 import "./globals.css";
 
 const displaySerif = Cormorant_Garamond({
@@ -41,7 +42,10 @@ export default function RootLayout({
       lang="en"
       className={`${displaySerif.variable} ${bodySans.variable} ${uiMono.variable} h-full`}
     >
-      <body className="min-h-full">{children}</body>
+      <body className="min-h-full">
+        {children}
+        <Analytics />
+      </body>
     </html>
   );
 }

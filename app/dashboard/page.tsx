@@ -14,6 +14,7 @@ import {
   ChevronRight,
   Home,
   ListTodo,
+  Pencil,
   Search,
   TriangleAlert,
 } from "lucide-react";
@@ -210,45 +211,91 @@ function formatWeekdayLong(date: Date) {
   return new Intl.DateTimeFormat("en-US", { weekday: "long" }).format(date);
 }
 
-function formatRelativeLabel(daysRemaining: number) {
-  if (daysRemaining < 0) {
-    const overdueDays = Math.abs(daysRemaining);
-    return `${overdueDays} day${overdueDays === 1 ? "" : "s"} overdue`;
+function getExactDiffMs(task: AcademicTask, now: Date) {
+  const [year, month, day] = task.dueDateIso.split("-").map(Number);
+  let hours = 23;
+  let minutes = 59;
+  let seconds = 59;
+
+  if (task.dueTime) {
+    const match = task.dueTime.match(/^(\d{1,2}):(\d{2})\s*(AM|PM)?$/i);
+    if (match) {
+      let h = parseInt(match[1], 10);
+      const m = parseInt(match[2], 10);
+      const period = match[3];
+
+      if (period) {
+        if (period.toUpperCase() === "PM" && h < 12) h += 12;
+        if (period.toUpperCase() === "AM" && h === 12) h = 0;
+      }
+      hours = h;
+      minutes = m;
+      seconds = 0;
+    }
   }
 
-  if (daysRemaining === 0) {
-    return "Today";
-  }
-
-  if (daysRemaining === 1) {
-    return "Tomorrow";
-  }
-
-  return `${daysRemaining} days left`;
+  const target = new Date(year, month - 1, day, hours, minutes, seconds);
+  return target.getTime() - now.getTime();
 }
 
-function getTaskTone(task: AcademicTask): MarkerTone {
-  if (task.daysRemaining < 0) {
+function formatRelativeLabel(task: AcademicTask, now: Date = new Date()) {
+  const diffMs = getExactDiffMs(task, now);
+  const isOverdue = diffMs < 0;
+  const absMs = Math.abs(diffMs);
+  
+  const totalMinutes = Math.floor(absMs / 60000);
+  const totalHours = Math.floor(totalMinutes / 60);
+  const days = Math.floor(totalHours / 24);
+  const remHours = totalHours % 24;
+  const remMinutes = totalMinutes % 60;
+
+  if (isOverdue) {
+    if (days > 0) {
+      return `${days}d overdue`;
+    }
+    if (totalHours > 0) {
+      return `${totalHours}h overdue`;
+    }
+    return `${totalMinutes}m overdue`;
+  }
+
+  if (days > 0) {
+    return `${days}d ${remHours}h left`;
+  }
+
+  if (totalHours > 0) {
+    return `${totalHours}h ${remMinutes}m left`;
+  }
+
+  return `${totalMinutes}m left`;
+}
+
+function getTaskTone(task: AcademicTask, now: Date = new Date()): MarkerTone {
+  const diffMs = getExactDiffMs(task, now);
+  
+  if (diffMs < 0) {
     return "overdue";
   }
 
-  if (task.daysRemaining <= 3) {
+  if (diffMs <= 259200000) { // 3 days
     return "due";
   }
 
   return "upcoming";
 }
 
-function getTaskAccent(task: AcademicTask) {
+function getTaskAccent(task: AcademicTask, now: Date = new Date()) {
   if (task.completed) {
     return "text-[#6f5b64]";
   }
 
-  if (task.daysRemaining < 0) {
+  const diffMs = getExactDiffMs(task, now);
+
+  if (diffMs < 0) {
     return "text-[#a31657]";
   }
 
-  if (task.daysRemaining <= 3) {
+  if (diffMs <= 259200000) { // 3 days
     return "text-[#b87b26]";
   }
 
@@ -555,7 +602,7 @@ function MobileTaskCard({
       <div className="flex items-center justify-between gap-3">
         <CoursePill course={task.courseCode} className={pillClassName} />
         <p className={`text-sm font-semibold ${getTaskAccent(task)}`}>
-          {formatRelativeLabel(task.daysRemaining)}
+          {formatRelativeLabel(task)}
         </p>
       </div>
       <h3 className="mt-4 text-[1.38rem] font-semibold leading-8 text-[#2c1d24]">
@@ -586,6 +633,7 @@ export default function DashboardPage() {
   const [tasks, setTasks] = useState<AcademicTask[]>([]);
   const [courses, setCourses] = useState<AcademicCourse[]>([]);
   const [isManageCoursesOpen, setIsManageCoursesOpen] = useState(false);
+  const [taskToEdit, setTaskToEdit] = useState<AcademicTask | null>(null);
   const [isLoading, setIsLoading] = useState(true);
   const [error, setError] = useState<string | null>(null);
   const [syncedAt, setSyncedAt] = useState<string | null>(null);
@@ -783,11 +831,12 @@ export default function DashboardPage() {
     const group = pendingTasks.filter((task) =>
       task.type.toLowerCase().includes("group"),
     ).length;
-    const urgent = pendingTasks.filter((task) => task.daysRemaining <= 2).length;
-    const dueSoon = pendingTasks.filter(
-      (task) => task.daysRemaining > 2 && task.daysRemaining <= 7,
-    ).length;
-    const upcoming = pendingTasks.filter((task) => task.daysRemaining > 7).length;
+    const urgent = pendingTasks.filter((task) => getExactDiffMs(task, currentTime) <= 2 * 86400000).length;
+    const dueSoon = pendingTasks.filter((task) => {
+      const diffMs = getExactDiffMs(task, currentTime);
+      return diffMs > 2 * 86400000 && diffMs <= 7 * 86400000;
+    }).length;
+    const upcoming = pendingTasks.filter((task) => getExactDiffMs(task, currentTime) > 7 * 86400000).length;
 
     return {
       completed,
@@ -799,7 +848,7 @@ export default function DashboardPage() {
       upcoming,
       urgent,
     };
-  }, [pendingTasks, tasks]);
+  }, [pendingTasks, tasks, currentTime]);
 
   const filteredTasks = useMemo(() => {
     if (taskFilter === "group") {
@@ -809,7 +858,7 @@ export default function DashboardPage() {
     }
 
     if (taskFilter === "urgent") {
-      return pendingTasks.filter((task) => task.daysRemaining <= 2);
+      return pendingTasks.filter((task) => getExactDiffMs(task, currentTime) <= 2 * 86400000);
     }
 
     if (taskFilter === "completed") {
@@ -817,7 +866,7 @@ export default function DashboardPage() {
     }
 
     return pendingTasks;
-  }, [pendingTasks, taskFilter, tasks]);
+  }, [pendingTasks, taskFilter, tasks, currentTime]);
 
   const taskFilterButtons: Array<{
     filter: TaskFilter;
@@ -887,7 +936,7 @@ export default function DashboardPage() {
 
   return (
     <main className="min-h-screen px-4 py-4 lg:px-6 lg:py-6">
-      <AddTaskModal isOpen={isModalOpen} onClose={() => { setIsModalOpen(false); void loadSheetData(); }} tasks={tasks} courses={courses} />
+      <AddTaskModal isOpen={isModalOpen} onClose={() => { setIsModalOpen(false); setTaskToEdit(null); void loadSheetData(); }} tasks={tasks} courses={courses} taskToEdit={taskToEdit} />
       <ManageCoursesModal isOpen={isManageCoursesOpen} onClose={() => { setIsManageCoursesOpen(false); void loadSheetData(); }} onRefresh={() => { void loadSheetData(); }} courses={courses} />
       {taskToConfirm && (
         <div className="fixed inset-0 z-50 flex items-center justify-center bg-[#2a1820]/50 p-4 backdrop-blur-sm">
@@ -996,10 +1045,10 @@ export default function DashboardPage() {
                         Course overview
                       </p>
                       <h2 className="mt-3 text-[2.35rem] font-semibold leading-none text-[#291920]">
-                        {courseCards.length} courses, {summary.total} tracked items
+                        {courseCards.length} courses
                       </h2>
                     </div>
-                    <button onClick={() => setIsManageCoursesOpen(true)} className="aksara-chip px-4 py-2 text-xs font-semibold hover:border-[#d8b7c0] hover:bg-white transition whitespace-nowrap">
+                    <button onClick={() => setIsManageCoursesOpen(true)} className="aksara-primary-button px-4 py-2 text-xs font-semibold text-white transition hover:opacity-90 whitespace-nowrap rounded-[1rem]">
                       Manage Courses
                     </button>
                   </div>
@@ -1075,7 +1124,7 @@ export default function DashboardPage() {
                         filteredTasks.map((task) => (
                           <div
                             key={`${task.title}-${task.dueDateIso}`}
-                            className="grid grid-cols-[minmax(0,2.3fr)_1fr_1fr_1fr_1fr] gap-6 rounded-[1.5rem] px-2 py-5 transition hover:bg-white/45"
+                            className="grid grid-cols-[minmax(0,2.3fr)_1.2fr_1fr_1fr_1fr_min-content] gap-6 rounded-[1.5rem] px-2 py-5 transition hover:bg-white/45"
                           >
                             <div>
                               <h3 className="text-[1.45rem] font-semibold leading-8 text-[#2c1d24]">
@@ -1105,27 +1154,38 @@ export default function DashboardPage() {
                                 </p>
                               ) : null}
                             </div>
-                            <div className="pt-2 flex justify-end">
-                              <label className="cursor-pointer flex items-center gap-3">
-                                <span className={`text-lg font-semibold ${getTaskAccent(task)}`}>
-                                  {formatRelativeLabel(task.daysRemaining)}
-                                </span>
-                                <button
-                                  type="button"
-                                  onClick={() => handleToggle(task.id, task.completed)}
-                                  className={`flex size-[1.35rem] items-center justify-center rounded-[0.4rem] border-[2.5px] transition-colors ${
-                                    task.completed 
-                                      ? "border-[#83103e] bg-[#83103e] text-white" 
-                                      : "border-[#dcc9cf] bg-white hover:border-[#83103e]"
-                                  }`}
-                                >
-                                  {task.completed && (
-                                    <svg className="size-3.5" fill="none" viewBox="0 0 24 24" stroke="currentColor" strokeWidth={3.5}>
-                                      <path strokeLinecap="round" strokeLinejoin="round" d="M5 13l4 4L19 7" />
-                                    </svg>
-                                  )}
-                                </button>
-                              </label>
+                            <div className="pt-2 text-right">
+                              <span className={`text-lg font-semibold ${getTaskAccent(task, currentTime)} whitespace-nowrap`}>
+                                {formatRelativeLabel(task, currentTime)}
+                              </span>
+                            </div>
+                            <div className="pt-2 flex items-center justify-end gap-3.5">
+                              <button
+                                type="button"
+                                onClick={() => {
+                                  setTaskToEdit(task);
+                                  setIsModalOpen(true);
+                                }}
+                                className="text-[#9b8790] hover:text-[#83103e] transition-colors p-1"
+                                title="Edit Task"
+                              >
+                                <Pencil className="size-4.5" />
+                              </button>
+                              <button
+                                type="button"
+                                onClick={() => handleToggle(task.id, task.completed)}
+                                className={`flex size-[1.35rem] items-center justify-center rounded-[0.4rem] border-[2.5px] transition-colors ${
+                                  task.completed 
+                                    ? "border-[#83103e] bg-[#83103e] text-white" 
+                                    : "border-[#dcc9cf] bg-white hover:border-[#83103e]"
+                                }`}
+                              >
+                                {task.completed && (
+                                  <svg className="size-3.5" fill="none" viewBox="0 0 24 24" stroke="currentColor" strokeWidth={3.5}>
+                                    <path strokeLinecap="round" strokeLinejoin="round" d="M5 13l4 4L19 7" />
+                                  </svg>
+                                )}
+                              </button>
                             </div>
                           </div>
                         ))
@@ -1226,8 +1286,8 @@ export default function DashboardPage() {
                                   <span className="min-w-0 leading-5">
                                     {task.courseTitle}
                                   </span>
-                                  <span className="text-right font-semibold leading-5">
-                                    {formatRelativeLabel(task.daysRemaining)}
+                                  <span className="text-right font-semibold leading-5 whitespace-nowrap">
+                                    {formatRelativeLabel(task, currentTime)}
                                   </span>
                                 </div>
                               </div>
@@ -1293,8 +1353,8 @@ export default function DashboardPage() {
                                 coursePillClasses[0]
                               }
                             />
-                            <span className={`text-sm font-semibold ${getTaskAccent(task)}`}>
-                              {formatRelativeLabel(task.daysRemaining)}
+                            <span className={`text-sm font-semibold ${getTaskAccent(task, currentTime)}`}>
+                              {formatRelativeLabel(task, currentTime)}
                             </span>
                           </div>
                           <h3 className="mt-3 text-lg font-semibold leading-6 text-[#2c1d24]">
@@ -1322,7 +1382,7 @@ export default function DashboardPage() {
                       </h1>
                     </div>
                     <div className="flex flex-wrap items-center justify-end gap-3 pt-4">
-                      <button onClick={() => setIsModalOpen(true)} className="aksara-primary-button px-5 py-2.5 text-sm font-semibold text-white rounded-[1.2rem] shadow-sm">
+                      <button onClick={() => { setTaskToEdit(null); setIsModalOpen(true); }} className="aksara-primary-button px-5 py-2.5 text-sm font-semibold text-white rounded-[1.2rem] shadow-sm">
                         + Add Task
                       </button>
                       {taskFilterButtons.map((button) => (
@@ -1388,28 +1448,37 @@ export default function DashboardPage() {
                               ) : null}
                             </div>
                             <div className="pt-2 text-right">
-                              <span className={`text-lg font-semibold ${getTaskAccent(task)} whitespace-nowrap`}>
-                                {formatRelativeLabel(task.daysRemaining)}
+                              <span className={`text-lg font-semibold ${getTaskAccent(task, currentTime)} whitespace-nowrap`}>
+                                {formatRelativeLabel(task, currentTime)}
                               </span>
                             </div>
-                            <div className="pt-2 flex justify-end">
-                              <label className="cursor-pointer flex items-center gap-3">
-                                <button
-                                  type="button"
-                                  onClick={() => handleToggle(task.id, task.completed)}
-                                  className={`flex size-[1.35rem] items-center justify-center rounded-[0.4rem] border-[2.5px] transition-colors ${
-                                    task.completed 
-                                      ? "border-[#83103e] bg-[#83103e] text-white" 
-                                      : "border-[#dcc9cf] bg-white hover:border-[#83103e]"
-                                  }`}
-                                >
-                                  {task.completed && (
-                                    <svg className="size-3.5" fill="none" viewBox="0 0 24 24" stroke="currentColor" strokeWidth={3.5}>
-                                      <path strokeLinecap="round" strokeLinejoin="round" d="M5 13l4 4L19 7" />
-                                    </svg>
-                                  )}
-                                </button>
-                              </label>
+                            <div className="pt-2 flex items-center justify-end gap-3.5">
+                              <button
+                                type="button"
+                                onClick={() => {
+                                  setTaskToEdit(task);
+                                  setIsModalOpen(true);
+                                }}
+                                className="text-[#9b8790] hover:text-[#83103e] transition-colors p-1"
+                                title="Edit Task"
+                              >
+                                <Pencil className="size-4.5" />
+                              </button>
+                              <button
+                                type="button"
+                                onClick={() => handleToggle(task.id, task.completed)}
+                                className={`flex size-[1.35rem] items-center justify-center rounded-[0.4rem] border-[2.5px] transition-colors ${
+                                  task.completed 
+                                    ? "border-[#83103e] bg-[#83103e] text-white" 
+                                    : "border-[#dcc9cf] bg-white hover:border-[#83103e]"
+                                }`}
+                              >
+                                {task.completed && (
+                                  <svg className="size-3.5" fill="none" viewBox="0 0 24 24" stroke="currentColor" strokeWidth={3.5}>
+                                    <path strokeLinecap="round" strokeLinejoin="round" d="M5 13l4 4L19 7" />
+                                  </svg>
+                                )}
+                              </button>
                             </div>
                           </div>
                         ))
@@ -1440,7 +1509,7 @@ export default function DashboardPage() {
                           A list of every course currently tracked.
                         </p>
                       </div>
-                      <button onClick={() => setIsManageCoursesOpen(true)} className="aksara-chip px-5 py-2.5 text-sm font-semibold hover:border-[#d8b7c0] hover:bg-white transition whitespace-nowrap">
+                      <button onClick={() => setIsManageCoursesOpen(true)} className="aksara-primary-button px-5 py-2.5 text-sm font-semibold text-white transition hover:opacity-90 whitespace-nowrap rounded-[1rem]">
                         Manage Courses
                       </button>
                     </div>
@@ -1517,7 +1586,7 @@ export default function DashboardPage() {
                 <div className="mt-4 flex items-center justify-between text-sm text-[#917b84]">
                   <span>{summary.pending} pending</span>
                   <span>
-                    {nextTask ? formatRelativeLabel(nextTask.daysRemaining) : "All clear"}
+                    {nextTask ? formatRelativeLabel(nextTask, currentTime) : "All clear"}
                   </span>
                 </div>
               </article>

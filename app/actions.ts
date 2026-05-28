@@ -148,3 +148,64 @@ export async function deleteCourse(id: string, code: string) {
 
   revalidatePath("/dashboard");
 }
+
+export async function editTask(formData: FormData) {
+  const supabase = await createClient();
+  const { data: { user } } = await supabase.auth.getUser();
+
+  if (!user) {
+    throw new Error("Unauthorized");
+  }
+
+  const id = formData.get("id") as string;
+  const courseCode = formData.get("courseCode") as string;
+  const courseTitle = formData.get("courseTitle") as string;
+  const title = formData.get("title") as string;
+  const type = formData.get("type") as string;
+  const dueDate = formData.get("dueDate") as string;
+  const dueTime = (formData.get("dueTime") as string) || null;
+
+  if (!id || !courseCode || !title || !dueDate || !type) {
+    throw new Error("Missing required fields");
+  }
+
+  const { error } = await supabase
+    .from("tasks")
+    .update({
+      course_code: courseCode,
+      course_title: courseTitle,
+      title,
+      type,
+      due_date: dueDate,
+      due_time: dueTime,
+    })
+    .eq("id", id)
+    .eq("user_id", user.id);
+
+  if (error) {
+    throw new Error(`Failed to edit task: ${error.message}`);
+  }
+
+  revalidatePath("/dashboard");
+}
+
+export async function deleteTask(id: string) {
+  const supabase = await createClient();
+  const { data: { user } } = await supabase.auth.getUser();
+
+  if (!user) {
+    throw new Error("Unauthorized");
+  }
+
+  const { error } = await supabase
+    .from("tasks")
+    .delete()
+    .eq("id", id)
+    .eq("user_id", user.id);
+
+  if (error) {
+    throw new Error(`Failed to delete task: ${error.message}`);
+  }
+
+  revalidatePath("/dashboard");
+}

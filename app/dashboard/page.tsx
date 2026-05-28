@@ -16,10 +16,12 @@ import {
   ListTodo,
   Pencil,
   Search,
+  Timer,
   TriangleAlert,
 } from "lucide-react";
+import { FocusTimerView } from "@/components/FocusTimerView";
 
-type MobileView = "dashboard" | "calendar" | "tasks" | "courses";
+type MobileView = "dashboard" | "calendar" | "tasks" | "courses" | "focus";
 type MarkerTone = "overdue" | "due" | "upcoming";
 type TaskFilter = "pending" | "group" | "urgent" | "completed";
 
@@ -34,6 +36,8 @@ type AcademicTask = {
   dueTime: string;
   title: string;
   type: string;
+  completedAt?: string | null;
+  createdAt?: string | null;
 };
 
 type AcademicCourse = {
@@ -43,12 +47,22 @@ type AcademicCourse = {
   colorIndex: number;
 };
 
+type FocusLog = {
+  id: string;
+  userId: string;
+  taskId: string | null;
+  duration: number;
+  type: "focus" | "shortBreak" | "longBreak";
+  createdAt: string;
+};
+
 type DashboardApiResponse =
   | {
       sourceUrl: string;
       syncedAt: string;
       tasks: AcademicTask[];
       courses: AcademicCourse[];
+      focusLogs: FocusLog[];
     }
   | {
       message: string;
@@ -91,6 +105,7 @@ const mobileTabs: Array<{
   { key: "calendar", label: "Calendar", icon: CalendarDays },
   { key: "tasks", label: "Tasks", icon: ListTodo },
   { key: "courses", label: "Courses", icon: BookOpen },
+  { key: "focus", label: "Focus", icon: Timer },
 ];
 
 const desktopSidebar = [
@@ -98,6 +113,7 @@ const desktopSidebar = [
   { key: "calendar", label: "Calendar", title: "Calendar", icon: CalendarDays },
   { key: "tasks", label: "Tasks", title: "Task list", icon: ListTodo },
   { key: "courses", label: "Courses", title: "Courses overview", icon: BookOpen },
+  { key: "focus", label: "Focus", title: "Focus timer", icon: Timer },
 ] satisfies Array<{
   icon: React.ComponentType<{ className?: string }>;
   key: MobileView;
@@ -110,6 +126,7 @@ const dashboardRoutes: Record<MobileView, string> = {
   calendar: "/dashboard/calendar",
   tasks: "/dashboard/tasks",
   courses: "/dashboard/courses",
+  focus: "/dashboard/focus",
 };
 
 const markerLabels: Record<MarkerTone, string> = {
@@ -187,6 +204,10 @@ function getViewFromPathname(pathname: string): MobileView {
 
   if (pathname.endsWith("/courses")) {
     return "courses";
+  }
+
+  if (pathname.endsWith("/focus")) {
+    return "focus";
   }
 
   return "dashboard";
@@ -632,6 +653,7 @@ export default function DashboardPage() {
   const [taskFilter, setTaskFilter] = useState<TaskFilter>("pending");
   const [tasks, setTasks] = useState<AcademicTask[]>([]);
   const [courses, setCourses] = useState<AcademicCourse[]>([]);
+  const [focusLogs, setFocusLogs] = useState<FocusLog[]>([]);
   const [isManageCoursesOpen, setIsManageCoursesOpen] = useState(false);
   const [taskToEdit, setTaskToEdit] = useState<AcademicTask | null>(null);
   const [isLoading, setIsLoading] = useState(true);
@@ -667,6 +689,7 @@ export default function DashboardPage() {
 
       setTasks(data.tasks);
       setCourses(data.courses || []);
+      setFocusLogs(data.focusLogs || []);
       setSyncedAt(data.syncedAt);
       setSourceUrl(data.sourceUrl);
       setError(null);
@@ -824,6 +847,71 @@ export default function DashboardPage() {
   }, [monthDate, pendingTasks]);
 
   const timelineTasks = useMemo(() => pendingTasks.slice(0, 3), [pendingTasks]);
+
+  const weeklyFocusStats = useMemo(() => {
+    const now = new Date(currentTime);
+    const day = now.getDay();
+    const diff = now.getDate() - day + (day === 0 ? -6 : 1);
+    const startOfWeek = new Date(now);
+    startOfWeek.setDate(diff);
+    startOfWeek.setHours(0, 0, 0, 0);
+
+    const weeklyLogs = focusLogs.filter((log) => {
+      const logDate = new Date(log.createdAt);
+      return logDate >= startOfWeek && log.type === "focus";
+    });
+
+    const totalSeconds = weeklyLogs.reduce((sum, log) => sum + log.duration, 0);
+    const totalMinutes = Math.floor(totalSeconds / 60);
+    const hours = Math.floor(totalMinutes / 60);
+    const minutes = totalMinutes % 60;
+
+    return { hours, minutes };
+  }, [focusLogs, currentTime]);
+
+  const velocityData = useMemo(() => {
+    const days = [];
+    const now = new Date(currentTime);
+    
+    // Last 5 days (ascending order for left-to-right bar rendering)
+    for (let i = 4; i >= 0; i--) {
+      const d = new Date(now);
+      d.setDate(now.getDate() - i);
+      d.setHours(0, 0, 0, 0);
+      days.push(d);
+    }
+
+    const results = days.map((dayDate) => {
+      const dayEnd = new Date(dayDate);
+      dayEnd.setHours(23, 59, 59, 999);
+
+      const completedOnDay = tasks.filter((task) => {
+        if (!task.completed) return false;
+        
+        // Fallback chain: completedAt -> createdAt -> dueDateIso
+        const compDate = task.completedAt 
+          ? new Date(task.completedAt) 
+          : (task.createdAt ? new Date(task.createdAt) : toDate(task.dueDateIso));
+          
+        return compDate >= dayDate && compDate <= dayEnd;
+      });
+
+      const count = completedOnDay.length;
+      const dayLabel = dayDate.toLocaleDateString("en-US", { weekday: "short" });
+
+      return {
+        label: `${dayLabel}: ${count} task${count === 1 ? "" : "s"}`,
+        count,
+      };
+    });
+
+    const maxVal = Math.max(4, ...results.map(r => r.count));
+    
+    return results.map(r => ({
+      ...r,
+      pct: Math.max(5, Math.round((r.count / maxVal) * 100)),
+    }));
+  }, [tasks, currentTime]);
 
   const summary = useMemo(() => {
     const total = tasks.length;
@@ -991,17 +1079,7 @@ export default function DashboardPage() {
               </div>
 
               <div className="flex items-center gap-4">
-                <div className="aksara-soft-card flex h-16 w-[32rem] max-w-[42vw] items-center gap-3 rounded-[1.3rem] px-5">
-                  <Search className="size-4 text-[#9e8b93]" />
-                  <input
-                    type="text"
-                    placeholder="Live sheet search coming soon..."
-                    className="min-w-0 flex-1 bg-transparent text-base text-[#544149] outline-none placeholder:text-[#a4939b]"
-                  />
-                  <div className="rounded-lg border border-[#ecdde0] px-2 py-1 text-xs font-semibold text-[#9a8790]">
-                    CSV
-                  </div>
-                </div>
+
                 <IconCircle className="size-14 rounded-full">
                   <Bell className="size-4.5" />
                 </IconCircle>
@@ -1021,21 +1099,98 @@ export default function DashboardPage() {
               {desktopView === "dashboard" ? (
                 <>
               <section className="space-y-7">
-                <article id="dashboard-home" className="aksara-card px-10 py-9">
-                  <p className="aksara-mono text-[0.66rem] text-[#b24e72]">
-                    {dashboardDateLabel} / {syncLabel}
-                  </p>
-                  <h1 className="aksara-serif mt-3 text-[4.8rem] leading-[0.94] tracking-[-0.05em] text-[#26171e]">
-                    {greetingLabel},{" "}
-                    <span className="italic text-[#a31657]">Jobayer.</span>
-                  </h1>
-                  <p className="mt-4 max-w-[44rem] text-[1.55rem] leading-10 text-[#5d4d55]">
-                    <span className="font-semibold text-[#a31657]">
-                      {summary.pending} pending
-                    </span>{" "}
-                    task{summary.pending === 1 ? "" : "s"} on your schedule.{" "}
-                    {greetingText}
-                  </p>
+                <article id="dashboard-home" className="aksara-card p-8 flex flex-col gap-6">
+                  {/* Row 1: Greeting & Summary */}
+                  <div>
+                    <p className="aksara-mono text-[0.66rem] text-[#b24e72] mb-3">
+                      {dashboardDateLabel} / {syncLabel}
+                    </p>
+                    <h1 className="aksara-serif text-[4rem] leading-[0.98] tracking-[-0.05em] text-[#26171e] mb-4">
+                      {greetingLabel},{" "}
+                      <span className="italic text-[#a31657]">Jobayer.</span>
+                    </h1>
+                    <p className="text-[1.38rem] leading-9 text-[#5d4d55] max-w-2xl">
+                      You have{" "}
+                      <span className="text-[#a31657] font-semibold">
+                        {summary.pending} pending task{summary.pending === 1 ? "" : "s"}
+                      </span>{" "}
+                      on your schedule.{" "}
+                      <span className="text-[#a31657] font-semibold">
+                        {pendingTasks.filter(t => getExactDiffMs(t, currentTime) <= 2 * 86400000).length} active deadline{pendingTasks.filter(t => getExactDiffMs(t, currentTime) <= 2 * 86400000).length === 1 ? "" : "s"}
+                      </span>{" "}
+                      are currently tracked.
+                    </p>
+                  </div>
+
+                  {/* Horizontal Divider */}
+                  <div className="h-px bg-[#ddbfc4]/30 w-full" />
+
+                  {/* Row 2: Progress Analytics */}
+                  <div className="flex flex-col md:flex-row items-center justify-between gap-12 pt-2 pb-1">
+                    {/* Left: Progress Wheel */}
+                    <div className="flex items-center gap-7">
+                      <div className="relative w-36 h-36 flex-shrink-0 flex items-center justify-center">
+                        <svg className="w-full h-full transform -rotate-90" viewBox="0 0 100 100">
+                          <circle cx="50" cy="50" fill="none" r="44" stroke="rgba(155, 112, 122, 0.15)" strokeWidth="8"></circle>
+                          <circle 
+                            className="transition-all duration-1000 ease-out" 
+                            cx="50" 
+                            cy="50" 
+                            fill="none" 
+                            r="44" 
+                            stroke="url(#progressGradient)" 
+                            strokeDasharray="276.46" 
+                            strokeDashoffset={276.46 - (276.46 * summary.completionRate) / 100} 
+                            strokeLinecap="round" 
+                            strokeWidth="8"
+                          ></circle>
+                          <defs>
+                            <linearGradient id="progressGradient" x1="0%" x2="100%" y1="0%" y2="0%">
+                              <stop offset="0%" stopColor="#83103e"></stop>
+                              <stop offset="100%" stopColor="#e2a22f"></stop>
+                            </linearGradient>
+                          </defs>
+                        </svg>
+                        <div className="absolute inset-0 flex flex-col items-center justify-center text-center mt-1">
+                          <span className="aksara-serif text-[2.2rem] font-bold text-[#83103e] leading-none">{summary.completionRate}%</span>
+                          <span className="text-[11px] text-[#9e8b93] font-bold uppercase tracking-wider mt-1.5">Finished</span>
+                        </div>
+                      </div>
+                      <div>
+                        <h3 className="text-2xl font-bold text-[#2c1d24] mb-1">Tasks Progress</h3>
+                        <p className="text-base text-[#8a747e]">{summary.completed} of {summary.total} completed</p>
+                      </div>
+                    </div>
+
+                    {/* Middle: Focus Time This Week */}
+                    <div className="flex flex-col gap-1.5 text-center md:text-left min-w-[14rem]">
+                      <span className="text-sm font-bold text-[#9e8b93] tracking-widest uppercase">FOCUS TIME THIS WEEK</span>
+                      <span className="aksara-serif text-[2.8rem] font-bold text-[#83103e] leading-none">
+                        {weeklyFocusStats.hours}h {weeklyFocusStats.minutes}m
+                      </span>
+                      <p className="text-xs text-[#9e8b93] font-semibold mt-1">Accumulated from Pomodoro sessions</p>
+                    </div>
+
+                    {/* Right: Velocity Sparkline */}
+                    <div className="flex-grow max-w-[16rem] w-full">
+                      <div className="flex justify-between items-end h-16 gap-2">
+                        {velocityData.map((bar, i) => (
+                          <div
+                            key={i}
+                            className="w-full bg-[#83103e]/30 hover:bg-[#83103e]/70 rounded-t-sm transition-all duration-300 relative group"
+                            style={{ height: `${bar.pct}%` }}
+                            title={bar.label}
+                          >
+                            {/* Hover Tooltip showing task count */}
+                            <span className="absolute bottom-full mb-1.5 left-1/2 -translate-x-1/2 text-[10px] font-bold text-[#83103e] bg-white border border-[#ddbfc4]/30 px-1.5 py-0.5 rounded shadow-sm opacity-0 group-hover:opacity-100 transition-opacity z-10 whitespace-nowrap pointer-events-none">
+                              {bar.count} task{bar.count === 1 ? "" : "s"}
+                            </span>
+                          </div>
+                        ))}
+                      </div>
+                      <span className="text-xs text-[#9e8b93] font-bold uppercase tracking-wider mt-3 block text-center md:text-left">Velocity (Task completions)</span>
+                    </div>
+                  </div>
                 </article>
 
                 <article id="dashboard-courses" className="aksara-card px-7 py-6">
@@ -1538,6 +1693,10 @@ export default function DashboardPage() {
                   </div>
                 </section>
               ) : null}
+
+              {desktopView === "focus" ? (
+                <FocusTimerView tasks={tasks} focusLogs={focusLogs} onRefresh={loadSheetData} />
+              ) : null}
             </div>
           </div>
         </div>
@@ -1804,11 +1963,20 @@ export default function DashboardPage() {
               </article>
             </section>
           ) : null}
+
+          {mobileView === "focus" ? (
+            <section>
+              <MobileTopBar meta="Focus pomodoro timer" title="Focus" accent="timer." />
+              <div className="mt-7">
+                <FocusTimerView tasks={tasks} focusLogs={focusLogs} onRefresh={loadSheetData} />
+              </div>
+            </section>
+          ) : null}
         </div>
 
         <div className="pointer-events-none fixed inset-x-0 bottom-4 z-30 flex justify-center px-4 lg:hidden">
           <nav className="aksara-mobile-tabbar pointer-events-auto w-full max-w-[25rem] px-3 py-3">
-            <div className="grid grid-cols-4 gap-2">
+            <div className="grid grid-cols-5 gap-1">
               {mobileTabs.map((item) => {
                 const Icon = item.icon;
                 const active = mobileView === item.key;
@@ -1818,7 +1986,7 @@ export default function DashboardPage() {
                     key={item.key}
                     type="button"
                     onClick={() => handleDesktopNavigation(item.key)}
-                    className={`flex flex-col items-center gap-1 rounded-[1rem] px-3 py-2 text-xs font-medium ${
+                    className={`flex flex-col items-center gap-1 rounded-[1rem] px-1 py-2 text-[10px] font-medium ${
                       active ? "text-[#a31657]" : "text-[#96838c]"
                     }`}
                   >

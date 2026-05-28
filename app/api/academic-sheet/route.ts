@@ -54,6 +54,8 @@ export async function GET() {
         dueTime: dueTime,
         title: task.title,
         type: task.type,
+        completedAt: task.completed_at || null,
+        createdAt: task.created_at || null,
       };
     });
 
@@ -64,11 +66,28 @@ export async function GET() {
       colorIndex: course.color_index || 0,
     }));
 
+    const { data: focusLogs, error: focusLogsError } = await supabase
+      .from("focus_logs")
+      .select("*")
+      .order("created_at", { ascending: false });
+
+    if (focusLogsError) throw focusLogsError;
+
+    const formattedFocusLogs = (focusLogs || []).map((log) => ({
+      id: log.id,
+      userId: log.user_id,
+      taskId: log.task_id,
+      duration: log.duration,
+      type: log.type,
+      createdAt: log.created_at,
+    }));
+
     return NextResponse.json({
       sourceUrl: "supabase",
       syncedAt: new Date().toISOString(),
       tasks: formattedTasks,
       courses: formattedCourses,
+      focusLogs: formattedFocusLogs,
     });
   } catch (error) {
     const message = error instanceof Error ? error.message : "Failed to load data.";

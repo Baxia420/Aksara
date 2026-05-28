@@ -8,7 +8,10 @@ export async function toggleTaskCompletion(taskId: string, isCompleted: boolean)
 
   const { error } = await supabase
     .from("tasks")
-    .update({ completed: !isCompleted })
+    .update({ 
+      completed: !isCompleted,
+      completed_at: !isCompleted ? new Date().toISOString() : null
+    })
     .eq("id", taskId);
 
   if (error) {
@@ -205,6 +208,32 @@ export async function deleteTask(id: string) {
 
   if (error) {
     throw new Error(`Failed to delete task: ${error.message}`);
+  }
+
+  revalidatePath("/dashboard");
+}
+
+export async function logFocusSession(
+  duration: number,
+  type: "focus" | "shortBreak" | "longBreak",
+  taskId: string | null = null
+) {
+  const supabase = await createClient();
+  const { data: { user } } = await supabase.auth.getUser();
+
+  if (!user) {
+    throw new Error("Unauthorized");
+  }
+
+  const { error } = await supabase.from("focus_logs").insert({
+    user_id: user.id,
+    task_id: taskId || null,
+    duration,
+    type,
+  });
+
+  if (error) {
+    throw new Error(`Failed to log focus session: ${error.message}`);
   }
 
   revalidatePath("/dashboard");

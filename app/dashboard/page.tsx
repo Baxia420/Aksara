@@ -354,6 +354,68 @@ function BrandLockup() {
   );
 }
 
+function DashboardLoadingScreen() {
+  const [statusIndex, setStatusIndex] = useState(0);
+  const statuses = [
+    "Establishing secure database connection...",
+    "Syncing academic logs and schedules...",
+    "Hydrating course trackers & tasks...",
+    "Readying focus timer dashboard...",
+    "Optimizing student planner workspace..."
+  ];
+
+  useEffect(() => {
+    const timer = setInterval(() => {
+      setStatusIndex((prev) => (prev + 1) % statuses.length);
+    }, 1200);
+    return () => clearInterval(timer);
+  }, [statuses.length]);
+
+  return (
+    <div className="fixed inset-0 z-50 flex flex-col items-center justify-center p-4 bg-[#f8f1eb]/85 backdrop-blur-md">
+      {/* Background orbs */}
+      <div className="absolute inset-0 pointer-events-none overflow-hidden z-[-1]">
+        <div className="absolute top-[10%] left-[13%] w-[40%] h-[40%] rounded-full bg-[rgba(226,162,47,0.18)] blur-[80px]" />
+        <div className="absolute top-[25%] right-[22%] w-[35%] h-[35%] rounded-full bg-[rgba(226,162,47,0.15)] blur-[70px]" />
+        <div className="absolute bottom-[16%] left-[22%] w-[45%] h-[45%] rounded-full bg-[rgba(131,16,62,0.08)] blur-[90px]" />
+        <div className="absolute bottom-[25%] right-[8%] w-[30%] h-[30%] rounded-full bg-[rgba(188,124,147,0.1)] blur-[70px]" />
+      </div>
+
+      <div className="aksara-card w-full max-w-md p-10 text-center flex flex-col items-center justify-center rounded-[2.5rem]">
+        {/* Animated Brand Glyph Container */}
+        <div className="relative flex items-center justify-center size-32 mb-8">
+          {/* Rotating outer ring */}
+          <div className="absolute inset-0 rounded-full border-2 border-dashed border-[#e2a22f] opacity-60 animate-spin" style={{ animationDuration: '12s' }} />
+          {/* Inner ring */}
+          <div className="absolute inset-2 rounded-full border border-[#83103e]/20" />
+          
+          {/* Breathing glyph */}
+          <div className="size-16 rounded-[1.25rem] flex items-center justify-center bg-[#83103e] text-[#e2a22f] shadow-[0_12px_28px_rgba(131,16,62,0.22)] animate-pulse" style={{ animationDuration: '2s' }}>
+            <TriangleAlert className="size-7" />
+          </div>
+        </div>
+
+        <h2 className="aksara-serif text-3xl font-semibold text-[#83103e] mb-2">
+          Aksara OS
+        </h2>
+        <p className="text-[#6f5b64] text-sm max-w-xs mx-auto mb-6">
+          Initializing your premium workspace and syncing databases...
+        </p>
+
+        {/* Separator line */}
+        <div className="w-12 h-0.5 bg-[#e2a22f]/30 rounded-full mb-6" />
+
+        {/* Dynamic Monospace Status Text */}
+        <div className="min-h-[1.5rem] flex items-center justify-center">
+          <p className="aksara-mono text-[0.62rem] text-[#b34973] font-medium tracking-[0.25em] uppercase transition-all duration-300">
+            {statuses[statusIndex]}
+          </p>
+        </div>
+      </div>
+    </div>
+  );
+}
+
 function IconCircle({
   children,
   className = "",
@@ -968,7 +1030,7 @@ export default function DashboardPage() {
 
   const greetingText = useMemo(() => {
     if (isLoading) {
-      return "Syncing your academic tracker from Google Sheets.";
+      return "Syncing your academic tracker from database.";
     }
 
     if (error) {
@@ -988,7 +1050,7 @@ export default function DashboardPage() {
 
   const syncLabel = useMemo(() => {
     if (error) {
-      return "Sheet sync failed";
+      return "Database sync failed";
     }
 
     if (isLoading || !syncedAt) {
@@ -1021,6 +1083,10 @@ export default function DashboardPage() {
   const handleDesktopNavigation = (view: MobileView) => {
     router.push(dashboardRoutes[view]);
   };
+
+  if (isLoading && tasks.length === 0) {
+    return <DashboardLoadingScreen />;
+  }
 
   return (
     <main className="min-h-screen px-4 py-4 lg:px-6 lg:py-6">
@@ -1728,7 +1794,7 @@ export default function DashboardPage() {
                   <p className="mt-2 text-base text-[#7d6872]">
                     {nextTask
                       ? `${nextTask.courseCode} / ${nextTask.type}`
-                      : "Your sheet currently has no active schedule items."}
+                      : "Your workspace currently has no active schedule items."}
                   </p>
                 </div>
                 <div className="mt-5 h-2.5 rounded-full bg-[#f2e1d8]">
@@ -1753,7 +1819,7 @@ export default function DashboardPage() {
               <article className="aksara-card mt-5 px-6 py-5">
                 <div className="flex items-center justify-between gap-4">
                   <p className="aksara-mono text-[0.58rem] text-[#b24e72]">
-                    Sheet summary
+                    Workspace summary
                   </p>
                   <p className="text-sm text-[#8d7880]">{summary.total} total</p>
                 </div>
@@ -1858,7 +1924,7 @@ export default function DashboardPage() {
 
           {mobileView === "tasks" ? (
             <section>
-              <MobileTopBar meta="Google Sheet tasks" title="All" accent="tasks." />
+              <MobileTopBar meta="Aksara OS tasks" title="All" accent="tasks." />
 
               <article className="aksara-card mt-7 px-5 py-4">
                 <div className="grid grid-cols-3 divide-x divide-[#edd9de] text-center">
@@ -1920,7 +1986,7 @@ export default function DashboardPage() {
                 ) : (
                   <article className="aksara-card rounded-[1.8rem] px-5 py-5 text-[#7d6872]">
                     {isLoading
-                      ? "Loading tasks from the linked Google Sheet..."
+                      ? "Loading tasks from database..."
                       : "No tasks match this filter."}
                   </article>
                 )}
@@ -1930,7 +1996,7 @@ export default function DashboardPage() {
 
           {mobileView === "courses" ? (
             <section>
-              <MobileTopBar meta="Google Sheet courses" title="Your" accent="courses." />
+              <MobileTopBar meta="Aksara OS courses" title="Your" accent="courses." />
 
               <article className="aksara-card mt-7 px-6 py-5">
                 <div className="flex items-center justify-between gap-4">

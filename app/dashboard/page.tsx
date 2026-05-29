@@ -3,9 +3,10 @@
 import Link from "next/link";
 import { usePathname, useRouter } from "next/navigation";
 import { useEffect, useMemo, useState, useTransition, useCallback } from "react";
-import { toggleTaskCompletion } from "@/app/actions";
+import { toggleTaskCompletion, signOutUser } from "@/app/actions";
 import { AddTaskModal } from "@/components/AddTaskModal";
 import { ManageCoursesModal } from "@/components/ManageCoursesModal";
+import { AccountSettingsModal } from "@/components/AccountSettingsModal";
 import {
   Bell,
   BookOpen,
@@ -60,7 +61,12 @@ type DashboardApiResponse =
   | {
       sourceUrl: string;
       syncedAt: string;
-      user?: { email: string; name: string };
+      user?: {
+        email: string;
+        name: string;
+        firstName?: string;
+        lastName?: string;
+      };
       tasks: AcademicTask[];
       courses: AcademicCourse[];
       focusLogs: FocusLog[];
@@ -637,15 +643,41 @@ function CalendarWidget({
   );
 }
 
+function getInitials(profile: { firstName?: string; lastName?: string; name?: string; email?: string } | null) {
+  if (!profile) return "J";
+  if (profile.firstName && profile.lastName) {
+    return `${profile.firstName.charAt(0)}${profile.lastName.charAt(0)}`.toUpperCase();
+  }
+  if (profile.firstName) {
+    return profile.firstName.substring(0, 2).toUpperCase();
+  }
+  if (profile.name) {
+    const parts = profile.name.trim().split(/\s+/);
+    if (parts.length >= 2) {
+      return `${parts[0].charAt(0)}${parts[1].charAt(0)}`.toUpperCase();
+    }
+    return parts[0].substring(0, 2).toUpperCase();
+  }
+  return "J";
+}
+
 function MobileTopBar({
   meta,
   title,
   accent,
+  userProfile = null,
+  onOpenSettings = () => {},
+  onLogout = () => {},
 }: {
   accent?: string;
   meta: string;
   title: string;
+  userProfile?: { email: string; name: string; firstName?: string; lastName?: string } | null;
+  onOpenSettings?: () => void;
+  onLogout?: () => void;
 }) {
+  const [isProfileOpen, setIsProfileOpen] = useState(false);
+
   return (
     <div>
       <div className="flex items-start justify-between gap-4">
@@ -665,8 +697,39 @@ function MobileTopBar({
           <IconCircle>
             <Bell className="size-4.5" />
           </IconCircle>
-          <div className="flex size-12 items-center justify-center rounded-full bg-[#e2a22f] text-sm font-bold text-[#7b173d] shadow-[0_10px_24px_rgba(226,162,47,0.28)]">
-            J
+          <div className="relative">
+            <button
+              onClick={() => setIsProfileOpen((prev) => !prev)}
+              className="flex size-12 cursor-pointer items-center justify-center rounded-full bg-[#e2a22f] text-sm font-bold text-[#7b173d] shadow-[0_10px_24px_rgba(226,162,47,0.28)] hover:brightness-105 active:scale-95 transition"
+            >
+              {getInitials(userProfile)}
+            </button>
+            {isProfileOpen && (
+              <div className="absolute right-0 mt-2 w-52 rounded-2xl border border-[rgba(155,112,122,0.2)] bg-[#fffaf6] p-2 shadow-xl z-50 animate-in fade-in slide-in-from-top-2 duration-150">
+                <div className="px-4 py-2 text-xs font-semibold text-[#8f7881] border-b border-[#ecd9de] mb-1 text-left">
+                  Signed in as <br />
+                  <span className="text-[#26171e] break-all">{userProfile?.email}</span>
+                </div>
+                <button
+                  onClick={() => {
+                    setIsProfileOpen(false);
+                    onOpenSettings();
+                  }}
+                  className="w-full text-left px-4 py-2.5 text-sm font-semibold text-[#6f5b64] hover:bg-[#83103e]/5 hover:text-[#83103e] rounded-xl transition"
+                >
+                  Account Settings
+                </button>
+                <button
+                  onClick={() => {
+                    setIsProfileOpen(false);
+                    onLogout();
+                  }}
+                  className="w-full text-left px-4 py-2.5 text-sm font-semibold text-rose-700 hover:bg-rose-50 rounded-xl transition"
+                >
+                  Log Out
+                </button>
+              </div>
+            )}
           </div>
         </div>
       </div>
@@ -704,7 +767,12 @@ function MobileTaskCard({
 }
 
 interface CachedDashboardData {
-  user?: { email: string; name: string };
+  user?: {
+    email: string;
+    name: string;
+    firstName?: string;
+    lastName?: string;
+  };
   tasks: AcademicTask[];
   courses: AcademicCourse[];
   focusLogs: FocusLog[];
@@ -728,13 +796,30 @@ export default function DashboardPage() {
   const [tasks, setTasks] = useState<AcademicTask[]>(() => cachedDashboardData?.tasks || []);
   const [courses, setCourses] = useState<AcademicCourse[]>(() => cachedDashboardData?.courses || []);
   const [focusLogs, setFocusLogs] = useState<FocusLog[]>(() => cachedDashboardData?.focusLogs || []);
-  const [userProfile, setUserProfile] = useState<{ email: string; name: string } | null>(() => cachedDashboardData?.user || null);
+  const [userProfile, setUserProfile] = useState<{
+    email: string;
+    name: string;
+    firstName?: string;
+    lastName?: string;
+  } | null>(() => cachedDashboardData?.user || null);
+  const [isProfileOpen, setIsProfileOpen] = useState(false);
+  const [isSettingsOpen, setIsSettingsOpen] = useState(false);
   const [isManageCoursesOpen, setIsManageCoursesOpen] = useState(false);
   const [taskToEdit, setTaskToEdit] = useState<AcademicTask | null>(null);
   const [isLoading, setIsLoading] = useState(() => !cachedDashboardData);
   const [error, setError] = useState<string | null>(null);
   const [syncedAt, setSyncedAt] = useState<string | null>(() => cachedDashboardData?.syncedAt || null);
   const [sourceUrl, setSourceUrl] = useState<string | null>(() => cachedDashboardData?.sourceUrl || null);
+
+  const handleLogout = useCallback(async () => {
+    try {
+      await signOutUser();
+      cachedDashboardData = null;
+      window.location.href = "/";
+    } catch (e) {
+      console.error("Logout failed", e);
+    }
+  }, []);
 
   useEffect(() => {
     const timer = window.setInterval(() => {
@@ -1139,6 +1224,7 @@ export default function DashboardPage() {
     <main className="min-h-screen px-4 py-4 lg:px-6 lg:py-6">
       <AddTaskModal isOpen={isModalOpen} onClose={() => { setIsModalOpen(false); setTaskToEdit(null); void loadSheetData(); }} tasks={tasks} courses={courses} taskToEdit={taskToEdit} />
       <ManageCoursesModal isOpen={isManageCoursesOpen} onClose={() => { setIsManageCoursesOpen(false); void loadSheetData(); }} onRefresh={() => { void loadSheetData(); }} courses={courses} />
+      <AccountSettingsModal isOpen={isSettingsOpen} onClose={() => { setIsSettingsOpen(false); void loadSheetData(); }} userProfile={userProfile} />
       {taskToConfirm && (
         <div className="fixed inset-0 z-50 flex items-center justify-center bg-[#2a1820]/50 p-4 backdrop-blur-sm">
           <div className="aksara-card w-full max-w-sm p-8 text-center rounded-[1.8rem]">
@@ -1196,8 +1282,36 @@ export default function DashboardPage() {
                 <IconCircle className="size-14 rounded-full">
                   <Bell className="size-4.5" />
                 </IconCircle>
-                <div className="flex size-14 items-center justify-center rounded-full border border-[#edd9de] bg-white text-sm font-bold text-[#a31657] shadow-[0_10px_24px_rgba(131,16,62,0.07)]">
-                  J
+                <div className="relative">
+                  <button
+                    onClick={() => setIsProfileOpen((prev) => !prev)}
+                    className="flex size-14 cursor-pointer items-center justify-center rounded-full border border-[#edd9de] bg-white text-sm font-bold text-[#a31657] shadow-[0_10px_24px_rgba(131,16,62,0.07)] hover:border-[#a31657] transition"
+                  >
+                    {getInitials(userProfile)}
+                  </button>
+                  {isProfileOpen && (
+                    <div className="absolute right-0 mt-2 w-56 rounded-2xl border border-[rgba(155,112,122,0.2)] bg-[#fffaf6] p-2 shadow-xl z-50 animate-in fade-in slide-in-from-top-2 duration-150">
+                      <div className="px-4 py-2 text-xs font-semibold text-[#8f7881] border-b border-[#ecd9de] mb-1 text-left">
+                        Signed in as <br />
+                        <span className="text-[#26171e] break-all">{userProfile?.email}</span>
+                      </div>
+                      <button
+                        onClick={() => {
+                          setIsProfileOpen(false);
+                          setIsSettingsOpen(true);
+                        }}
+                        className="w-full text-left px-4 py-2.5 text-sm font-semibold text-[#6f5b64] hover:bg-[#83103e]/5 hover:text-[#83103e] rounded-xl transition"
+                      >
+                        Account Settings
+                      </button>
+                      <button
+                        onClick={handleLogout}
+                        className="w-full text-left px-4 py-2.5 text-sm font-semibold text-rose-700 hover:bg-rose-50 rounded-xl transition"
+                      >
+                        Log Out
+                      </button>
+                    </div>
+                  )}
                 </div>
               </div>
             </header>
@@ -1827,6 +1941,9 @@ export default function DashboardPage() {
                 meta={syncLabel}
                 title="Hello"
                 accent={`${userProfile?.name || "Student"}.`}
+                userProfile={userProfile}
+                onOpenSettings={() => setIsSettingsOpen(true)}
+                onLogout={handleLogout}
               />
 
               <article className="aksara-card mt-8 px-6 py-5">
@@ -1914,7 +2031,13 @@ export default function DashboardPage() {
 
           {mobileView === "calendar" ? (
             <section>
-              <MobileTopBar meta="Live schedule month" title="Calendar" />
+              <MobileTopBar
+                meta="Live schedule month"
+                title="Calendar"
+                userProfile={userProfile}
+                onOpenSettings={() => setIsSettingsOpen(true)}
+                onLogout={handleLogout}
+              />
               <div className="mt-7">
                 <CalendarWidget
                   activeDay={calendarData.activeDay}
@@ -1975,7 +2098,14 @@ export default function DashboardPage() {
 
           {mobileView === "tasks" ? (
             <section>
-              <MobileTopBar meta="Aksara OS tasks" title="All" accent="tasks." />
+              <MobileTopBar
+                meta="Aksara OS tasks"
+                title="All"
+                accent="tasks."
+                userProfile={userProfile}
+                onOpenSettings={() => setIsSettingsOpen(true)}
+                onLogout={handleLogout}
+              />
 
               <article className="aksara-card mt-7 px-5 py-4">
                 <div className="grid grid-cols-3 divide-x divide-[#edd9de] text-center">
@@ -2047,7 +2177,14 @@ export default function DashboardPage() {
 
           {mobileView === "courses" ? (
             <section>
-              <MobileTopBar meta="Aksara OS courses" title="Your" accent="courses." />
+              <MobileTopBar
+                meta="Aksara OS courses"
+                title="Your"
+                accent="courses."
+                userProfile={userProfile}
+                onOpenSettings={() => setIsSettingsOpen(true)}
+                onLogout={handleLogout}
+              />
 
               <article className="aksara-card mt-7 px-6 py-5">
                 <div className="flex items-center justify-between gap-4">
@@ -2083,7 +2220,14 @@ export default function DashboardPage() {
 
           {mobileView === "focus" ? (
             <section>
-              <MobileTopBar meta="Focus pomodoro timer" title="Focus" accent="timer." />
+              <MobileTopBar
+                meta="Focus pomodoro timer"
+                title="Focus"
+                accent="timer."
+                userProfile={userProfile}
+                onOpenSettings={() => setIsSettingsOpen(true)}
+                onLogout={handleLogout}
+              />
               <div className="mt-7">
                 <FocusTimerView tasks={tasks} focusLogs={focusLogs} onRefresh={loadSheetData} />
               </div>

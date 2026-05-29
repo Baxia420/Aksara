@@ -322,3 +322,45 @@ export async function logFocusSession(
 
   revalidatePath("/dashboard");
 }
+
+export async function signOutUser() {
+  const supabase = await createClient();
+  await supabase.auth.signOut();
+}
+
+export async function updateProfile(formData: FormData) {
+  const supabase = await createClient();
+  const { data: { user } } = await supabase.auth.getUser();
+
+  if (!user) {
+    throw new Error("Unauthorized");
+  }
+
+  const firstName = formData.get("firstName") as string;
+  const lastName = formData.get("lastName") as string;
+  const password = formData.get("password") as string;
+
+  if (!firstName || !lastName) {
+    throw new Error("First Name and Last Name are required");
+  }
+
+  const updateData: any = {
+    data: {
+      first_name: firstName,
+      last_name: lastName,
+      full_name: `${firstName} ${lastName}`.trim(),
+    }
+  };
+
+  if (password && password.trim().length >= 6) {
+    updateData.password = password;
+  }
+
+  const { error } = await supabase.auth.updateUser(updateData);
+
+  if (error) {
+    throw new Error(`Failed to update profile: ${error.message}`);
+  }
+
+  revalidatePath("/dashboard");
+}

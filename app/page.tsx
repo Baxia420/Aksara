@@ -44,7 +44,8 @@ function BrandMark() {
 function LoginForm({ mobile = false }: { mobile?: boolean }) {
   const router = useRouter();
   const [isSignUp, setIsSignUp] = useState(false);
-  const [fullName, setFullName] = useState("");
+  const [firstName, setFirstName] = useState("");
+  const [lastName, setLastName] = useState("");
   const [username, setUsername] = useState("");
   const [password, setPassword] = useState("");
   const [error, setError] = useState<string | null>(null);
@@ -65,7 +66,7 @@ function LoginForm({ mobile = false }: { mobile?: boolean }) {
           headers: {
             "Content-Type": "application/json",
           },
-          body: JSON.stringify({ password, username, fullName }),
+          body: JSON.stringify({ password, username, firstName, lastName }),
         });
 
         const data = (await response.json().catch(() => ({}))) as { message?: string };
@@ -77,7 +78,8 @@ function LoginForm({ mobile = false }: { mobile?: boolean }) {
         setSuccessMessage("Account created successfully! Check your email to verify and complete your registration.");
         setUsername("");
         setPassword("");
-        setFullName("");
+        setFirstName("");
+        setLastName("");
       } else {
         const response = await fetch("/api/login", {
           method: "POST",
@@ -146,25 +148,46 @@ function LoginForm({ mobile = false }: { mobile?: boolean }) {
         onSubmit={handleSubmit}
       >
         {isSignUp && (
-          <label className="block">
-            <span
-              className={`aksara-mono mb-2 block text-[#91727d] ${
-                mobile ? "text-[0.55rem]" : "text-[0.62rem]"
-              }`}
-            >
-              Full Name
-            </span>
-            <input
-              required
-              type="text"
-              value={fullName}
-              onChange={(event) => setFullName(event.target.value)}
-              placeholder="Jobayer Alam"
-              className={`w-full rounded-[1.15rem] border border-[#efdde1] bg-white font-semibold text-[#433139] outline-none transition focus:border-[#d6a534] ${
-                mobile ? "px-5 py-3.5 text-base" : "px-5 py-4 text-lg"
-              }`}
-            />
-          </label>
+          <div className="grid grid-cols-2 gap-4">
+            <label className="block">
+              <span
+                className={`aksara-mono mb-2 block text-[#91727d] ${
+                  mobile ? "text-[0.55rem]" : "text-[0.62rem]"
+                }`}
+              >
+                First Name
+              </span>
+              <input
+                required
+                type="text"
+                value={firstName}
+                onChange={(event) => setFirstName(event.target.value)}
+                placeholder="Jobayer"
+                className={`w-full rounded-[1.15rem] border border-[#efdde1] bg-white font-semibold text-[#433139] outline-none transition focus:border-[#d6a534] ${
+                  mobile ? "px-4 py-3.5 text-base" : "px-5 py-4 text-lg"
+                }`}
+              />
+            </label>
+            <label className="block">
+              <span
+                className={`aksara-mono mb-2 block text-[#91727d] ${
+                  mobile ? "text-[0.55rem]" : "text-[0.62rem]"
+                }`}
+              >
+                Last Name
+              </span>
+              <input
+                required
+                type="text"
+                value={lastName}
+                onChange={(event) => setLastName(event.target.value)}
+                placeholder="Alam"
+                className={`w-full rounded-[1.15rem] border border-[#efdde1] bg-white font-semibold text-[#433139] outline-none transition focus:border-[#d6a534] ${
+                  mobile ? "px-4 py-3.5 text-base" : "px-5 py-4 text-lg"
+                }`}
+              />
+            </label>
+          </div>
         )}
 
         <label className="block">

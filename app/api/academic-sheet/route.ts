@@ -107,7 +107,9 @@ export async function GET() {
       syncedAt: new Date().toISOString(),
       user: {
         email: user.email,
-        name: user.user_metadata?.full_name || user.email?.split("@")[0] || "Student",
+        firstName: user.user_metadata?.first_name || (user.email === "alam.j@graduate.utm.my" ? "Jobayer" : user.user_metadata?.full_name?.split(" ")[0]) || user.email?.split("@")[0] || "Student",
+        lastName: user.user_metadata?.last_name || (user.email === "alam.j@graduate.utm.my" ? "Alam" : user.user_metadata?.full_name?.split(" ").slice(1).join(" ")) || "",
+        name: user.user_metadata?.first_name || (user.email === "alam.j@graduate.utm.my" ? "Jobayer" : user.user_metadata?.full_name?.split(" ")[0]) || user.email?.split("@")[0] || "Student",
       },
       tasks: formattedTasks,
       courses: formattedCourses,

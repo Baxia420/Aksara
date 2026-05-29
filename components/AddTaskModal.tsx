@@ -22,8 +22,12 @@ export function AddTaskModal({ isOpen, onClose, tasks = [], courses = [], taskTo
         ).entries()
       ).map(([code, title]) => ({ code, title }));
 
+  const defaultTypes = ["Assignment", "Group Task", "Midterm", "Final Exam"];
   const uniqueTypes = Array.from(
-    new Set((tasks || []).map((t) => t.type).filter(t => t && t.toLowerCase() !== "wewe"))
+    new Set([
+      ...defaultTypes,
+      ...(tasks || []).map((t) => t.type).filter(t => t && t.toLowerCase() !== "wewe")
+    ])
   );
 
   // Reset state when opened

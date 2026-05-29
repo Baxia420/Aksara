@@ -702,6 +702,16 @@ function MobileTaskCard({
   );
 }
 
+interface CachedDashboardData {
+  tasks: AcademicTask[];
+  courses: AcademicCourse[];
+  focusLogs: FocusLog[];
+  syncedAt: string | null;
+  sourceUrl: string | null;
+}
+
+let cachedDashboardData: CachedDashboardData | null = null;
+
 export default function DashboardPage() {
   const pathname = usePathname();
   const router = useRouter();
@@ -713,15 +723,15 @@ export default function DashboardPage() {
     return new Date(now.getFullYear(), now.getMonth(), 1);
   });
   const [taskFilter, setTaskFilter] = useState<TaskFilter>("pending");
-  const [tasks, setTasks] = useState<AcademicTask[]>([]);
-  const [courses, setCourses] = useState<AcademicCourse[]>([]);
-  const [focusLogs, setFocusLogs] = useState<FocusLog[]>([]);
+  const [tasks, setTasks] = useState<AcademicTask[]>(() => cachedDashboardData?.tasks || []);
+  const [courses, setCourses] = useState<AcademicCourse[]>(() => cachedDashboardData?.courses || []);
+  const [focusLogs, setFocusLogs] = useState<FocusLog[]>(() => cachedDashboardData?.focusLogs || []);
   const [isManageCoursesOpen, setIsManageCoursesOpen] = useState(false);
   const [taskToEdit, setTaskToEdit] = useState<AcademicTask | null>(null);
-  const [isLoading, setIsLoading] = useState(true);
+  const [isLoading, setIsLoading] = useState(() => !cachedDashboardData);
   const [error, setError] = useState<string | null>(null);
-  const [syncedAt, setSyncedAt] = useState<string | null>(null);
-  const [sourceUrl, setSourceUrl] = useState<string | null>(null);
+  const [syncedAt, setSyncedAt] = useState<string | null>(() => cachedDashboardData?.syncedAt || null);
+  const [sourceUrl, setSourceUrl] = useState<string | null>(() => cachedDashboardData?.sourceUrl || null);
 
   useEffect(() => {
     const timer = window.setInterval(() => {
@@ -736,7 +746,9 @@ export default function DashboardPage() {
 
   const loadSheetData = useCallback(async () => {
     try {
-      setIsLoading(true);
+      if (!cachedDashboardData) {
+        setIsLoading(true);
+      }
       setError(null);
       const response = await fetch("/api/academic-sheet", {
         cache: "no-store",
@@ -744,6 +756,9 @@ export default function DashboardPage() {
       const data = (await response.json()) as DashboardApiResponse;
 
       if (!response.ok || "message" in data) {
+        if (response.status === 401) {
+          cachedDashboardData = null;
+        }
         throw new Error(
           "message" in data ? data.message : "Unable to load data.",
         );
@@ -754,6 +769,15 @@ export default function DashboardPage() {
       setFocusLogs(data.focusLogs || []);
       setSyncedAt(data.syncedAt);
       setSourceUrl(data.sourceUrl);
+
+      cachedDashboardData = {
+        tasks: data.tasks,
+        courses: data.courses || [],
+        focusLogs: data.focusLogs || [],
+        syncedAt: data.syncedAt,
+        sourceUrl: data.sourceUrl,
+      };
+
       setError(null);
     } catch (loadError) {
       setError(

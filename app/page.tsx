@@ -57,6 +57,12 @@ function LoginForm({ mobile = false }: { mobile?: boolean }) {
     event.preventDefault();
     setError(null);
     setSuccessMessage(null);
+
+    if (isSignUp && password.length < 6) {
+      setError("Password must be at least 6 characters.");
+      return;
+    }
+
     setIsSubmitting(true);
 
     try {
@@ -99,8 +105,15 @@ function LoginForm({ mobile = false }: { mobile?: boolean }) {
 
         router.push("/dashboard");
       }
-    } catch {
-      setError(isSignUp ? "Unable to register right now." : "Unable to sign in right now.");
+    } catch (err) {
+      console.error("Authentication error:", err);
+      setError(
+        err instanceof Error
+          ? err.message
+          : isSignUp
+          ? "Unable to register right now."
+          : "Unable to sign in right now."
+      );
     } finally {
       setIsSubmitting(false);
     }

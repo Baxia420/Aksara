@@ -60,6 +60,7 @@ type DashboardApiResponse =
   | {
       sourceUrl: string;
       syncedAt: string;
+      user?: { email: string; name: string };
       tasks: AcademicTask[];
       courses: AcademicCourse[];
       focusLogs: FocusLog[];
@@ -703,6 +704,7 @@ function MobileTaskCard({
 }
 
 interface CachedDashboardData {
+  user?: { email: string; name: string };
   tasks: AcademicTask[];
   courses: AcademicCourse[];
   focusLogs: FocusLog[];
@@ -726,6 +728,7 @@ export default function DashboardPage() {
   const [tasks, setTasks] = useState<AcademicTask[]>(() => cachedDashboardData?.tasks || []);
   const [courses, setCourses] = useState<AcademicCourse[]>(() => cachedDashboardData?.courses || []);
   const [focusLogs, setFocusLogs] = useState<FocusLog[]>(() => cachedDashboardData?.focusLogs || []);
+  const [userProfile, setUserProfile] = useState<{ email: string; name: string } | null>(() => cachedDashboardData?.user || null);
   const [isManageCoursesOpen, setIsManageCoursesOpen] = useState(false);
   const [taskToEdit, setTaskToEdit] = useState<AcademicTask | null>(null);
   const [isLoading, setIsLoading] = useState(() => !cachedDashboardData);
@@ -769,8 +772,12 @@ export default function DashboardPage() {
       setFocusLogs(data.focusLogs || []);
       setSyncedAt(data.syncedAt);
       setSourceUrl(data.sourceUrl);
+      if ("user" in data && data.user) {
+        setUserProfile(data.user);
+      }
 
       cachedDashboardData = {
+        user: "user" in data ? data.user : undefined,
         tasks: data.tasks,
         courses: data.courses || [],
         focusLogs: data.focusLogs || [],
@@ -999,30 +1006,46 @@ export default function DashboardPage() {
     }));
   }, [tasks, currentTime]);
 
+  const EXAM_TYPES = useMemo(() => ["quiz", "midterm", "final exam"], []);
+
   const summary = useMemo(() => {
-    const total = tasks.length;
-    const completed = tasks.filter((task) => task.completed).length;
-    const group = pendingTasks.filter((task) =>
-      task.type.toLowerCase().includes("group"),
+    // Separate tasks and exams
+    const actualTasks = tasks.filter(t => !EXAM_TYPES.includes((t.type || "").toLowerCase()));
+    const actualPendingTasks = pendingTasks.filter(t => !EXAM_TYPES.includes((t.type || "").toLowerCase()));
+
+    const actualExams = tasks.filter(t => EXAM_TYPES.includes((t.type || "").toLowerCase()));
+    const actualPendingExams = pendingTasks.filter(t => EXAM_TYPES.includes((t.type || "").toLowerCase()));
+
+    const totalTasks = actualTasks.length;
+    const completedTasks = actualTasks.filter((t) => t.completed).length;
+
+    const groupTasks = actualPendingTasks.filter((t) =>
+      t.type.toLowerCase().includes("group"),
     ).length;
-    const urgent = pendingTasks.filter((task) => getExactDiffMs(task, currentTime) <= 2 * 86400000).length;
-    const dueSoon = pendingTasks.filter((task) => {
-      const diffMs = getExactDiffMs(task, currentTime);
+
+    const urgentTasks = actualPendingTasks.filter((t) => getExactDiffMs(t, currentTime) <= 2 * 86400000).length;
+    const dueSoonTasks = actualPendingTasks.filter((t) => {
+      const diffMs = getExactDiffMs(t, currentTime);
       return diffMs > 2 * 86400000 && diffMs <= 7 * 86400000;
     }).length;
-    const upcoming = pendingTasks.filter((task) => getExactDiffMs(task, currentTime) > 7 * 86400000).length;
+    const upcomingTasks = actualPendingTasks.filter((t) => getExactDiffMs(t, currentTime) > 7 * 86400000).length;
 
     return {
-      completed,
-      completionRate: total === 0 ? 0 : Math.round((completed / total) * 100),
-      dueSoon,
-      group,
-      pending: pendingTasks.length,
-      total,
-      upcoming,
-      urgent,
+      completed: completedTasks,
+      completionRate: totalTasks === 0 ? 0 : Math.round((completedTasks / totalTasks) * 100),
+      dueSoon: dueSoonTasks,
+      group: groupTasks,
+      pending: actualPendingTasks.length,
+      total: totalTasks,
+      upcoming: upcomingTasks,
+      urgent: urgentTasks,
+      
+      // Exams stats
+      pendingExams: actualPendingExams.length,
+      totalExams: actualExams.length,
+      completedExams: actualExams.filter((t) => t.completed).length,
     };
-  }, [pendingTasks, tasks, currentTime]);
+  }, [pendingTasks, tasks, currentTime, EXAM_TYPES]);
 
   const filteredTasks = useMemo(() => {
     if (taskFilter === "group") {
@@ -1197,12 +1220,16 @@ export default function DashboardPage() {
                     </p>
                     <h1 className="aksara-serif text-[4rem] leading-[0.98] tracking-[-0.05em] text-[#26171e] mb-4">
                       {greetingLabel},{" "}
-                      <span className="italic text-[#a31657]">Jobayer.</span>
+                      <span className="italic text-[#a31657]">{userProfile?.name || "Student"}.</span>
                     </h1>
                     <p className="text-[1.38rem] leading-9 text-[#5d4d55] max-w-2xl">
                       You have{" "}
                       <span className="text-[#a31657] font-semibold">
                         {summary.pending} pending task{summary.pending === 1 ? "" : "s"}
+                      </span>{" "}
+                      and{" "}
+                      <span className="text-[#a31657] font-semibold">
+                        {summary.pendingExams} exam{summary.pendingExams === 1 ? "" : "s"}
                       </span>{" "}
                       on your schedule.{" "}
                       <span className="text-[#a31657] font-semibold">
@@ -1798,8 +1825,8 @@ export default function DashboardPage() {
             <section>
               <MobileTopBar
                 meta={syncLabel}
-                title={`${greetingLabel},`}
-                accent="Jobayer."
+                title="Hello"
+                accent={`${userProfile?.name || "Student"}.`}
               />
 
               <article className="aksara-card mt-8 px-6 py-5">

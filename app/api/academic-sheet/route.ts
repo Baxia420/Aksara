@@ -15,6 +15,7 @@ export async function GET() {
     const { data: tasks, error: tasksError } = await supabase
       .from("tasks")
       .select("*")
+      .or(`user_id.eq.${user.id},is_public.eq.true`)
       .order("due_date", { ascending: true });
 
     if (tasksError) throw tasksError;
@@ -22,9 +23,22 @@ export async function GET() {
     const { data: courses, error: coursesError } = await supabase
       .from("courses")
       .select("*")
+      .or(`user_id.eq.${user.id},is_public.eq.true`)
       .order("code", { ascending: true });
 
     if (coursesError) throw coursesError;
+
+    const { data: completions, error: completionsError } = await supabase
+      .from("user_task_completions")
+      .select("task_id, completed_at")
+      .eq("user_id", user.id);
+
+    if (completionsError) throw completionsError;
+
+    const completedTaskIds = new Set(completions?.map((c) => c.task_id) || []);
+    const completionMap = new Map<string, string>(
+      completions?.map((c) => [c.task_id, c.completed_at]) || []
+    );
 
     const formattedTasks = tasks.map((task) => {
       const today = new Date();
@@ -43,9 +57,12 @@ export async function GET() {
         dueTime = `${hr12}:${minutes} ${period}`;
       }
 
+      const isCompleted = completedTaskIds.has(task.id) || (task.completed && task.user_id === user.id);
+      const completedAt = completionMap.get(task.id) || (task.completed && task.user_id === user.id ? task.completed_at : null);
+
       return {
         id: task.id,
-        completed: task.completed,
+        completed: isCompleted,
         courseCode: task.course_code,
         courseDisplay: task.course_title ? `${task.course_code} - ${task.course_title}` : task.course_code,
         courseTitle: task.course_title || "General",
@@ -54,8 +71,10 @@ export async function GET() {
         dueTime: dueTime,
         title: task.title,
         type: task.type,
-        completedAt: task.completed_at || null,
+        completedAt: completedAt,
         createdAt: task.created_at || null,
+        userId: task.user_id,
+        isPublic: task.is_public || false,
       };
     });
 
@@ -64,6 +83,7 @@ export async function GET() {
       code: course.code,
       title: course.title,
       colorIndex: course.color_index || 0,
+      isPublic: course.is_public || false,
     }));
 
     const { data: focusLogs, error: focusLogsError } = await supabase
@@ -85,6 +105,10 @@ export async function GET() {
     return NextResponse.json({
       sourceUrl: "supabase",
       syncedAt: new Date().toISOString(),
+      user: {
+        email: user.email,
+        name: user.user_metadata?.full_name || user.email?.split("@")[0] || "Student",
+      },
       tasks: formattedTasks,
       courses: formattedCourses,
       focusLogs: formattedFocusLogs,

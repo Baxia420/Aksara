@@ -3,19 +3,41 @@
 import { createClient } from "@/lib/supabase/server";
 import { revalidatePath } from "next/cache";
 
+const ADMIN_EMAIL = "alam.j@graduate.utm.my";
+
 export async function toggleTaskCompletion(taskId: string, isCompleted: boolean) {
   const supabase = await createClient();
+  const { data: { user } } = await supabase.auth.getUser();
 
-  const { error } = await supabase
-    .from("tasks")
-    .update({ 
-      completed: !isCompleted,
-      completed_at: !isCompleted ? new Date().toISOString() : null
-    })
-    .eq("id", taskId);
+  if (!user) {
+    throw new Error("Unauthorized");
+  }
 
-  if (error) {
-    throw new Error(`Failed to toggle task: ${error.message}`);
+  if (!isCompleted) {
+    // Mark as completed: insert user completion record
+    const { error } = await supabase
+      .from("user_task_completions")
+      .insert({
+        user_id: user.id,
+        task_id: taskId,
+        completed_at: new Date().toISOString()
+      });
+
+    // Code 23505 is unique constraint violation (already completed)
+    if (error && error.code !== "23505") {
+      throw new Error(`Failed to complete task: ${error.message}`);
+    }
+  } else {
+    // Mark as incomplete: remove completion record
+    const { error } = await supabase
+      .from("user_task_completions")
+      .delete()
+      .eq("user_id", user.id)
+      .eq("task_id", taskId);
+
+    if (error) {
+      throw new Error(`Failed to un-complete task: ${error.message}`);
+    }
   }
 
   revalidatePath("/dashboard");
@@ -40,6 +62,8 @@ export async function createTask(formData: FormData) {
     throw new Error("Missing required fields");
   }
 
+  const isPublic = user.email === ADMIN_EMAIL;
+
   const { error } = await supabase.from("tasks").insert({
     user_id: user.id,
     course_code: courseCode,
@@ -49,6 +73,7 @@ export async function createTask(formData: FormData) {
     due_date: dueDate,
     due_time: dueTime,
     completed: false,
+    is_public: isPublic,
   });
 
   if (error) {
@@ -74,11 +99,14 @@ export async function addCourse(formData: FormData) {
     throw new Error("Missing required fields");
   }
 
+  const isPublic = user.email === ADMIN_EMAIL;
+
   const { error } = await supabase.from("courses").insert({
     user_id: user.id,
     code,
     title,
     color_index: colorIndex,
+    is_public: isPublic,
   });
 
   if (error) {
@@ -103,11 +131,25 @@ export async function editCourse(formData: FormData) {
     throw new Error("Missing required fields");
   }
 
+  const { data: course, error: fetchError } = await supabase
+    .from("courses")
+    .select("user_id, is_public")
+    .eq("id", id)
+    .single();
+
+  if (fetchError || !course) {
+    throw new Error("Course not found");
+  }
+
+  if (course.is_public && user.email !== ADMIN_EMAIL) {
+    throw new Error("Only the administrator can edit shared courses.");
+  }
+
   const { error } = await supabase
     .from("courses")
     .update({ color_index: colorIndex })
     .eq("id", id)
-    .eq("user_id", user.id);
+    .eq(user.email === ADMIN_EMAIL ? "id" : "user_id", user.email === ADMIN_EMAIL ? id : user.id);
 
   if (error) {
     throw new Error(`Failed to update course: ${error.message}`);
@@ -122,6 +164,20 @@ export async function deleteCourse(id: string, code: string) {
 
   if (!user) {
     throw new Error("Unauthorized");
+  }
+
+  const { data: course, error: fetchError } = await supabase
+    .from("courses")
+    .select("user_id, is_public")
+    .eq("id", id)
+    .single();
+
+  if (fetchError || !course) {
+    throw new Error("Course not found");
+  }
+
+  if (course.is_public && user.email !== ADMIN_EMAIL) {
+    throw new Error("Only the administrator can delete shared courses.");
   }
 
   // Check if course has tasks
@@ -143,7 +199,7 @@ export async function deleteCourse(id: string, code: string) {
     .from("courses")
     .delete()
     .eq("id", id)
-    .eq("user_id", user.id);
+    .eq(user.email === ADMIN_EMAIL ? "id" : "user_id", user.email === ADMIN_EMAIL ? id : user.id);
 
   if (error) {
     throw new Error(`Failed to delete course: ${error.message}`);
@@ -172,6 +228,20 @@ export async function editTask(formData: FormData) {
     throw new Error("Missing required fields");
   }
 
+  const { data: task, error: fetchError } = await supabase
+    .from("tasks")
+    .select("user_id, is_public")
+    .eq("id", id)
+    .single();
+
+  if (fetchError || !task) {
+    throw new Error("Task not found");
+  }
+
+  if (task.is_public && user.email !== ADMIN_EMAIL) {
+    throw new Error("Only the administrator can edit shared tasks.");
+  }
+
   const { error } = await supabase
     .from("tasks")
     .update({
@@ -183,7 +253,7 @@ export async function editTask(formData: FormData) {
       due_time: dueTime,
     })
     .eq("id", id)
-    .eq("user_id", user.id);
+    .eq(user.email === ADMIN_EMAIL ? "id" : "user_id", user.email === ADMIN_EMAIL ? id : user.id);
 
   if (error) {
     throw new Error(`Failed to edit task: ${error.message}`);
@@ -200,11 +270,25 @@ export async function deleteTask(id: string) {
     throw new Error("Unauthorized");
   }
 
+  const { data: task, error: fetchError } = await supabase
+    .from("tasks")
+    .select("user_id, is_public")
+    .eq("id", id)
+    .single();
+
+  if (fetchError || !task) {
+    throw new Error("Task not found");
+  }
+
+  if (task.is_public && user.email !== ADMIN_EMAIL) {
+    throw new Error("Only the administrator can delete shared tasks.");
+  }
+
   const { error } = await supabase
     .from("tasks")
     .delete()
     .eq("id", id)
-    .eq("user_id", user.id);
+    .eq(user.email === ADMIN_EMAIL ? "id" : "user_id", user.email === ADMIN_EMAIL ? id : user.id);
 
   if (error) {
     throw new Error(`Failed to delete task: ${error.message}`);

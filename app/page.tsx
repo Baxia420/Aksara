@@ -43,37 +43,62 @@ function BrandMark() {
 
 function LoginForm({ mobile = false }: { mobile?: boolean }) {
   const router = useRouter();
+  const [isSignUp, setIsSignUp] = useState(false);
+  const [fullName, setFullName] = useState("");
   const [username, setUsername] = useState("");
   const [password, setPassword] = useState("");
   const [error, setError] = useState<string | null>(null);
+  const [successMessage, setSuccessMessage] = useState<string | null>(null);
   const [isSubmitting, setIsSubmitting] = useState(false);
   const errorId = mobile ? "login-error-mobile" : "login-error-desktop";
 
   async function handleSubmit(event: FormEvent<HTMLFormElement>) {
     event.preventDefault();
     setError(null);
+    setSuccessMessage(null);
     setIsSubmitting(true);
 
     try {
-      const response = await fetch("/api/login", {
-        method: "POST",
-        headers: {
-          "Content-Type": "application/json",
-        },
-        body: JSON.stringify({ password, username }),
-      });
+      if (isSignUp) {
+        const response = await fetch("/api/signup", {
+          method: "POST",
+          headers: {
+            "Content-Type": "application/json",
+          },
+          body: JSON.stringify({ password, username, fullName }),
+        });
 
-      if (!response.ok) {
-        const data = (await response
-          .json()
-          .catch(() => ({}))) as { message?: string };
-        setError(data.message ?? "Invalid username or password.");
-        return;
+        const data = (await response.json().catch(() => ({}))) as { message?: string };
+        if (!response.ok) {
+          setError(data.message ?? "Registration failed. Please try again.");
+          return;
+        }
+
+        setSuccessMessage("Account created successfully! Check your email to verify and complete your registration.");
+        setUsername("");
+        setPassword("");
+        setFullName("");
+      } else {
+        const response = await fetch("/api/login", {
+          method: "POST",
+          headers: {
+            "Content-Type": "application/json",
+          },
+          body: JSON.stringify({ password, username }),
+        });
+
+        if (!response.ok) {
+          const data = (await response
+            .json()
+            .catch(() => ({}))) as { message?: string };
+          setError(data.message ?? "Invalid username or password.");
+          return;
+        }
+
+        router.push("/dashboard");
       }
-
-      router.push("/dashboard");
     } catch {
-      setError("Unable to sign in right now.");
+      setError(isSignUp ? "Unable to register right now." : "Unable to sign in right now.");
     } finally {
       setIsSubmitting(false);
     }
@@ -89,7 +114,7 @@ function LoginForm({ mobile = false }: { mobile?: boolean }) {
     >
       {mobile ? null : (
         <div className="flex items-center justify-between gap-4">
-          <p className="aksara-mono text-[0.62rem] text-[#b34973]">Sign In</p>
+          <p className="aksara-mono text-[0.62rem] text-[#b34973]">{isSignUp ? "Sign Up" : "Sign In"}</p>
           <div className="rounded-full border border-[#ecd9dd] bg-white px-4 py-2 text-[0.62rem] font-semibold uppercase tracking-[0.28em] text-[#9a7d86]">
             Secure / Acid
           </div>
@@ -99,9 +124,19 @@ function LoginForm({ mobile = false }: { mobile?: boolean }) {
       {!mobile ? (
         <div className="mt-6">
           <h2 className="aksara-serif text-[3.2rem] leading-[0.85] text-[#2a1820] sm:text-[4rem]">
-            Welcome
-            <br />
-            <span className="italic text-[#a31657]">back.</span>
+            {isSignUp ? (
+              <>
+                Create
+                <br />
+                <span className="italic text-[#a31657]">account.</span>
+              </>
+            ) : (
+              <>
+                Welcome
+                <br />
+                <span className="italic text-[#a31657]">back.</span>
+              </>
+            )}
           </h2>
         </div>
       ) : null}
@@ -110,13 +145,35 @@ function LoginForm({ mobile = false }: { mobile?: boolean }) {
         className={`${mobile ? "mt-5 space-y-4" : "mt-7 space-y-5"}`}
         onSubmit={handleSubmit}
       >
+        {isSignUp && (
+          <label className="block">
+            <span
+              className={`aksara-mono mb-2 block text-[#91727d] ${
+                mobile ? "text-[0.55rem]" : "text-[0.62rem]"
+              }`}
+            >
+              Full Name
+            </span>
+            <input
+              required
+              type="text"
+              value={fullName}
+              onChange={(event) => setFullName(event.target.value)}
+              placeholder="Jobayer Alam"
+              className={`w-full rounded-[1.15rem] border border-[#efdde1] bg-white font-semibold text-[#433139] outline-none transition focus:border-[#d6a534] ${
+                mobile ? "px-5 py-3.5 text-base" : "px-5 py-4 text-lg"
+              }`}
+            />
+          </label>
+        )}
+
         <label className="block">
           <span
             className={`aksara-mono mb-2 block text-[#91727d] ${
               mobile ? "text-[0.55rem]" : "text-[0.62rem]"
             }`}
           >
-            Username / UTMID
+            Email / UTMID
           </span>
           <input
             autoComplete="username"
@@ -125,7 +182,7 @@ function LoginForm({ mobile = false }: { mobile?: boolean }) {
             required
             type="text"
             value={username}
-            placeholder="Boleh"
+            placeholder="name@graduate.utm.my"
             className={`w-full rounded-[1.15rem] border border-[#efdde1] bg-white font-semibold text-[#433139] outline-none transition focus:border-[#d6a534] ${
               mobile ? "px-5 py-3.5 text-base" : "px-5 py-4 text-lg"
             }`}
@@ -141,19 +198,21 @@ function LoginForm({ mobile = false }: { mobile?: boolean }) {
             >
               Password
             </span>
-            <Link
-              href="/forgot-password"
-              className={`font-semibold text-[#83103e] transition hover:text-[#57102b] ${
-                mobile ? "text-[0.92rem]" : "text-sm"
-              }`}
-            >
-              Forgot Password
-            </Link>
+            {!isSignUp && (
+              <Link
+                href="/forgot-password"
+                className={`font-semibold text-[#83103e] transition hover:text-[#57102b] ${
+                  mobile ? "text-[0.92rem]" : "text-sm"
+                }`}
+              >
+                Forgot Password
+              </Link>
+            )}
           </div>
           <input
             aria-describedby={error ? errorId : undefined}
             aria-invalid={error ? "true" : "false"}
-            autoComplete="current-password"
+            autoComplete={isSignUp ? "new-password" : "current-password"}
             name="password"
             onChange={(event) => setPassword(event.target.value)}
             required
@@ -172,7 +231,13 @@ function LoginForm({ mobile = false }: { mobile?: boolean }) {
           </p>
         ) : null}
 
-        {!mobile ? (
+        {successMessage ? (
+          <div className="p-4 rounded-[1rem] bg-[#fbf4f6] border border-[#eedfe3] text-sm font-semibold text-[#a31657] leading-relaxed">
+            {successMessage}
+          </div>
+        ) : null}
+
+        {!mobile && !isSignUp ? (
           <label className="flex items-center gap-3 text-base text-[#68555f]">
             <input
               type="checkbox"
@@ -191,11 +256,31 @@ function LoginForm({ mobile = false }: { mobile?: boolean }) {
               mobile ? "px-5 py-3.5 text-base" : "px-5 py-4 text-lg"
             }`}
           >
-            {isSubmitting ? "Signing in..." : "Login"}
+            {isSubmitting
+              ? isSignUp
+                ? "Creating account..."
+                : "Signing in..."
+              : isSignUp
+              ? "Register"
+              : "Login"}
             <ArrowRight className="size-5" />
           </button>
         </div>
       </form>
+
+      <div className="mt-5 text-center">
+        <button
+          type="button"
+          onClick={() => {
+            setIsSignUp(!isSignUp);
+            setError(null);
+            setSuccessMessage(null);
+          }}
+          className="font-semibold text-[#83103e] hover:text-[#57102b] transition text-sm"
+        >
+          {isSignUp ? "Already have an account? Sign In" : "Don't have an account? Sign Up"}
+        </button>
+      </div>
 
       {!mobile ? (
         <p className="mt-8 text-center text-sm leading-6 text-[#826c75]">

@@ -22,7 +22,7 @@ export function AddTaskModal({ isOpen, onClose, tasks = [], courses = [], taskTo
         ).entries()
       ).map(([code, title]) => ({ code, title }));
 
-  const defaultTypes = ["Assignment", "Group Task", "Midterm", "Final Exam"];
+  const defaultTypes = ["Assignment", "Group Task", "Quiz", "Midterm", "Final Exam"];
   const uniqueTypes = Array.from(
     new Set([
       ...defaultTypes,

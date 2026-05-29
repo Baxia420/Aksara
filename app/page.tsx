@@ -81,8 +81,8 @@ function LoginForm({ mobile = false }: { mobile?: boolean }) {
           return;
         }
 
-        setSuccessMessage("Account created successfully! Check your email to verify and complete your registration.");
-        setUsername("");
+        setSuccessMessage("Account created successfully! You can sign in immediately.");
+        setIsSignUp(false);
         setPassword("");
         setFirstName("");
         setLastName("");

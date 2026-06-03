@@ -1926,7 +1926,7 @@ export default function DashboardPage() {
               ) : null}
 
               {desktopView === "focus" ? (
-                <FocusTimerView tasks={tasks} focusLogs={focusLogs} onRefresh={loadSheetData} />
+                <FocusTimerView tasks={tasks} courses={courses} focusLogs={focusLogs} onRefresh={loadSheetData} />
               ) : null}
             </div>
           </div>
@@ -2229,7 +2229,7 @@ export default function DashboardPage() {
                 onLogout={handleLogout}
               />
               <div className="mt-7">
-                <FocusTimerView tasks={tasks} focusLogs={focusLogs} onRefresh={loadSheetData} />
+                <FocusTimerView tasks={tasks} courses={courses} focusLogs={focusLogs} onRefresh={loadSheetData} />
               </div>
             </section>
           ) : null}

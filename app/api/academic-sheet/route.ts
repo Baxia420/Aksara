@@ -86,9 +86,15 @@ export async function GET() {
       isPublic: course.is_public || false,
     }));
 
+    // Limit to the authenticated user's logs only (security fix) and cap at 90 days back
+    const ninetyDaysAgo = new Date();
+    ninetyDaysAgo.setDate(ninetyDaysAgo.getDate() - 90);
+
     const { data: focusLogs, error: focusLogsError } = await supabase
       .from("focus_logs")
       .select("*")
+      .eq("user_id", user.id)
+      .gte("created_at", ninetyDaysAgo.toISOString())
       .order("created_at", { ascending: false });
 
     if (focusLogsError) throw focusLogsError;

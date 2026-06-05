@@ -108,7 +108,7 @@ const mobileTabs: Array<{
   key: MobileView;
   label: string;
 }> = [
-  { key: "dashboard", label: "Dashboard", icon: Home },
+  { key: "dashboard", label: "Home", icon: Home },
   { key: "calendar", label: "Calendar", icon: CalendarDays },
   { key: "tasks", label: "Tasks", icon: ListTodo },
   { key: "courses", label: "Courses", icon: BookOpen },
@@ -2098,14 +2098,24 @@ export default function DashboardPage() {
 
           {mobileView === "tasks" ? (
             <section>
-              <MobileTopBar
-                meta="Aksara OS tasks"
-                title="All"
-                accent="tasks."
-                userProfile={userProfile}
-                onOpenSettings={() => setIsSettingsOpen(true)}
-                onLogout={handleLogout}
-              />
+              <div className="flex items-end justify-between gap-4">
+                <MobileTopBar
+                  meta="Aksara OS tasks"
+                  title="All"
+                  accent="tasks."
+                  userProfile={userProfile}
+                  onOpenSettings={() => setIsSettingsOpen(true)}
+                  onLogout={handleLogout}
+                />
+                <button
+                  type="button"
+                  onClick={() => setIsModalOpen(true)}
+                  className="aksara-primary-button mb-1 shrink-0 flex items-center gap-2 rounded-2xl px-5 py-3 text-sm font-semibold text-white shadow-lg"
+                >
+                  <Pencil className="size-3.5" />
+                  Add Task
+                </button>
+              </div>
 
               <article className="aksara-card mt-7 px-5 py-4">
                 <div className="grid grid-cols-3 divide-x divide-[#edd9de] text-center">
@@ -2177,14 +2187,24 @@ export default function DashboardPage() {
 
           {mobileView === "courses" ? (
             <section>
-              <MobileTopBar
-                meta="Aksara OS courses"
-                title="Your"
-                accent="courses."
-                userProfile={userProfile}
-                onOpenSettings={() => setIsSettingsOpen(true)}
-                onLogout={handleLogout}
-              />
+              <div className="flex items-end justify-between gap-4">
+                <MobileTopBar
+                  meta="Aksara OS courses"
+                  title="Your"
+                  accent="courses."
+                  userProfile={userProfile}
+                  onOpenSettings={() => setIsSettingsOpen(true)}
+                  onLogout={handleLogout}
+                />
+                <button
+                  type="button"
+                  onClick={() => setIsManageCoursesOpen(true)}
+                  className="aksara-primary-button mb-1 shrink-0 flex items-center gap-2 rounded-2xl px-5 py-3 text-sm font-semibold text-white shadow-lg"
+                >
+                  <Pencil className="size-3.5" />
+                  Manage
+                </button>
+              </div>
 
               <article className="aksara-card mt-7 px-6 py-5">
                 <div className="flex items-center justify-between gap-4">
@@ -2202,7 +2222,7 @@ export default function DashboardPage() {
                       <p className="aksara-mono text-[0.52rem] text-[#a94f6d]">
                         {course.code}
                       </p>
-                      <h2 className="mt-3 text-lg font-semibold leading-6 text-[#2d1d24]">
+                      <h2 className="mt-3 text-base font-semibold leading-5 text-[#2d1d24] line-clamp-2 break-words">
                         {course.title}
                       </h2>
                       <p className="mt-3 text-sm text-[#8a747e]">
@@ -2237,7 +2257,7 @@ export default function DashboardPage() {
 
         <div className="pointer-events-none fixed inset-x-0 bottom-4 z-30 flex justify-center px-4 lg:hidden">
           <nav className="aksara-mobile-tabbar pointer-events-auto w-full max-w-[25rem] px-3 py-3">
-            <div className="grid grid-cols-5 gap-1">
+        <div className="grid grid-cols-5 gap-0">
               {mobileTabs.map((item) => {
                 const Icon = item.icon;
                 const active = mobileView === item.key;
@@ -2247,12 +2267,12 @@ export default function DashboardPage() {
                     key={item.key}
                     type="button"
                     onClick={() => handleDesktopNavigation(item.key)}
-                    className={`flex flex-col items-center gap-1 rounded-[1rem] px-1 py-2 text-[10px] font-medium ${
+                    className={`flex flex-col items-center gap-1 rounded-[0.85rem] px-0.5 py-2 text-[9px] font-semibold tracking-tight ${
                       active ? "text-[#a31657]" : "text-[#96838c]"
                     }`}
                   >
-                    <Icon className="size-4" />
-                    <span>{item.label}</span>
+                    <Icon className="size-[1.1rem]" />
+                    <span className="truncate w-full text-center">{item.label}</span>
                   </button>
                 );
               })}

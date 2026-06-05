@@ -440,17 +440,17 @@ export function FocusTimerView({
     <div className="max-w-[100rem] mx-auto grid grid-cols-1 lg:grid-cols-12 gap-7">
       {/* ── Left / Center Column (Timer) ── */}
       <div className="lg:col-span-8 flex flex-col gap-4">
-        <article className="aksara-card rounded-[2rem] p-8 md:p-12 flex flex-col items-center justify-center min-h-[580px] relative overflow-hidden">
+        <article className="aksara-card rounded-[2rem] p-5 pt-7 md:p-12 flex flex-col items-center justify-center relative overflow-hidden">
           {/* Decorative blur */}
           <div className="absolute top-1/2 left-1/2 -translate-x-1/2 -translate-y-1/2 w-64 h-64 bg-[#83103e]/4 rounded-full blur-3xl z-0 pointer-events-none" />
 
           {/* Mode selectors */}
-          <div className="flex gap-2 bg-[#f4ede7]/60 p-1.5 rounded-full backdrop-blur-md border border-[#ddbfc4]/30 z-10 mb-10">
+          <div className="flex flex-wrap justify-center gap-2 bg-[#f4ede7]/60 p-1.5 rounded-2xl backdrop-blur-md border border-[#ddbfc4]/30 z-10 mb-8 w-full max-w-sm">
             {(["focus", "shortBreak", "longBreak"] as TimerMode[]).map((mode) => (
               <button
                 key={mode}
                 onClick={() => handleModeChange(mode)}
-                className={`px-5 py-2 text-sm font-semibold rounded-full transition-all duration-200 ${
+                className={`flex-1 min-w-[6rem] px-3 py-2 text-xs font-semibold rounded-xl transition-all duration-200 ${
                   timerMode === mode
                     ? "bg-white text-[#83103e] shadow-[0_4px_12px_rgba(131,16,62,0.06)]"
                     : "text-[#6f5b64] hover:bg-white/40"
@@ -464,7 +464,7 @@ export function FocusTimerView({
           </div>
 
           {/* SVG Progress Ring */}
-          <div className="relative w-64 h-64 md:w-72 md:h-72 flex items-center justify-center z-10 mb-10">
+          <div className="relative w-52 h-52 md:w-72 md:h-72 flex items-center justify-center z-10 mb-8">
             <svg
               className="w-full h-full absolute top-0 left-0"
               viewBox="0 0 100 100"
@@ -502,7 +502,7 @@ export function FocusTimerView({
           </div>
 
           {/* Controls */}
-          <div className="flex items-center gap-6 z-10 mb-10">
+          <div className="flex items-center gap-5 z-10 mb-8">
             <button
               onClick={handleReset}
               className="w-12 h-12 rounded-full border border-[#ddbfc4]/40 text-[#6f5b64] flex items-center justify-center hover:bg-[#fffaf6]/70 transition-all active:scale-95 shadow-sm"
@@ -554,7 +554,7 @@ export function FocusTimerView({
               </button>
 
               {isDropdownOpen && (
-                <div className="absolute bottom-full left-0 right-0 mb-2 max-h-52 overflow-y-auto bg-white border border-[#ddbfc4]/40 rounded-xl shadow-[0_12px_32px_rgba(131,16,62,0.1)] z-30 aksara-scrollbar">
+                <div className="absolute top-full left-0 right-0 mt-2 max-h-52 overflow-y-auto bg-white border border-[#ddbfc4]/40 rounded-xl shadow-[0_12px_32px_rgba(131,16,62,0.1)] z-30 aksara-scrollbar">
                   {activeTasks.length === 0 ? (
                     <div className="p-4 text-[#8a747e] text-center text-sm">
                       No pending tasks found.

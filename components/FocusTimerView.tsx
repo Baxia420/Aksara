@@ -440,7 +440,7 @@ export function FocusTimerView({
     <div className="max-w-[100rem] mx-auto grid grid-cols-1 lg:grid-cols-12 gap-7">
       {/* ── Left / Center Column (Timer) ── */}
       <div className="lg:col-span-8 flex flex-col gap-4">
-        <article className="aksara-card rounded-[2rem] p-5 pt-7 md:p-12 flex flex-col items-center justify-center relative overflow-hidden">
+        <article className="aksara-card rounded-[2rem] p-5 pt-7 md:p-12 flex flex-col items-center justify-center relative">
           {/* Decorative blur */}
           <div className="absolute top-1/2 left-1/2 -translate-x-1/2 -translate-y-1/2 w-64 h-64 bg-[#83103e]/4 rounded-full blur-3xl z-0 pointer-events-none" />
 

@@ -28,7 +28,7 @@ export function InstallPrompt() {
   return (
     <div className="fixed inset-x-0 bottom-[calc(6rem+env(safe-area-inset-bottom))] z-40 flex justify-center px-4 lg:hidden">
       <div className="aksara-card pointer-events-auto flex w-full max-w-[25rem] items-start gap-3 rounded-[1.4rem] px-4 py-3.5">
-        <div className="mt-0.5 flex size-9 shrink-0 items-center justify-center rounded-xl bg-maroon text-gold">
+        <div className="mt-0.5 flex size-9 shrink-0 items-center justify-center rounded-xl bg-brand text-gold">
           <Share className="size-4.5" />
         </div>
         <div className="min-w-0 flex-1">

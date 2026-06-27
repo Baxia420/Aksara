@@ -47,7 +47,7 @@ export function ThemeToggle() {
             aria-pressed={active}
             className={`flex items-center gap-2 rounded-[0.7rem] px-4 py-2 text-sm font-semibold transition ${
               active
-                ? "bg-maroon text-white shadow-[0_8px_18px_rgba(131,16,62,0.18)]"
+                ? "bg-brand text-white shadow-[0_8px_18px_rgba(131,16,62,0.18)]"
                 : "text-ink-muted hover:text-ink"
             }`}
           >

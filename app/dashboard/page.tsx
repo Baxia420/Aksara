@@ -1,7 +1,7 @@
 "use client";
 
 import Link from "next/link";
-import { usePathname, useRouter } from "next/navigation";
+import { useRouter } from "next/navigation";
 import { use, useEffect, useMemo, useState, useTransition, useCallback } from "react";
 import { toggleTaskCompletion, signOutUser } from "@/app/actions";
 import { AddTaskModal } from "@/components/AddTaskModal";
@@ -83,34 +83,6 @@ const desktopSidebar = [
   title: string;
 }>;
 
-const dashboardRoutes: Record<MobileView, string> = {
-  dashboard: "/dashboard",
-  calendar: "/dashboard/calendar",
-  tasks: "/dashboard/tasks",
-  courses: "/dashboard/courses",
-  focus: "/dashboard/focus",
-};
-
-function getViewFromPathname(pathname: string): MobileView {
-  if (pathname.endsWith("/calendar")) {
-    return "calendar";
-  }
-
-  if (pathname.endsWith("/tasks")) {
-    return "tasks";
-  }
-
-  if (pathname.endsWith("/courses")) {
-    return "courses";
-  }
-
-  if (pathname.endsWith("/focus")) {
-    return "focus";
-  }
-
-  return "dashboard";
-}
-
 function BrandGlyph({ size = "default" }: { size?: "default" | "small" }) {
   const classes =
     size === "small"
@@ -119,7 +91,7 @@ function BrandGlyph({ size = "default" }: { size?: "default" | "small" }) {
 
   return (
     <div
-      className={`${classes} flex items-center justify-center bg-maroon text-gold shadow-[0_12px_28px_rgba(131,16,62,0.18)]`}
+      className={`${classes} flex items-center justify-center bg-brand text-gold shadow-[0_12px_28px_rgba(131,16,62,0.18)]`}
     >
       <GraduationCap className={size === "small" ? "size-5" : "size-6"} />
     </div>
@@ -265,7 +237,7 @@ function CalendarWidget({
                     }
                     className={`flex h-10 w-10 items-center justify-center rounded-[1rem] text-base font-semibold ${
                       isActive
-                        ? "bg-maroon-bright text-white shadow-[0_10px_20px_rgba(131,16,62,0.22)]"
+                        ? "bg-brand-bright text-white shadow-[0_10px_20px_rgba(131,16,62,0.22)]"
                         : "text-ink-body"
                     } ${
                       hasDayTasks
@@ -475,10 +447,10 @@ function MobileTaskCard({
 }
 
 export default function DashboardPage() {
-  const pathname = usePathname();
   const router = useRouter();
-  const desktopView = getViewFromPathname(pathname);
-  const mobileView = desktopView;
+  // Tabs are in-page client state (not routes) so switching is instant and only
+  // the initial dashboard load shows a loading screen.
+  const [view, setView] = useState<MobileView>("dashboard");
 
   // Data is fetched once on the server (dashboard layout) and read here via the
   // React `use` API. Navigating between tabs reuses the resolved promise, so it
@@ -839,8 +811,8 @@ export default function DashboardPage() {
         new Date(currentMonth.getFullYear(), currentMonth.getMonth() + 1, 1),
     );
   };
-  const handleDesktopNavigation = (view: MobileView) => {
-    router.push(dashboardRoutes[view]);
+  const handleDesktopNavigation = (next: MobileView) => {
+    setView(next);
   };
 
   return (
@@ -879,7 +851,7 @@ export default function DashboardPage() {
             <div className="flex flex-col gap-5">
               {desktopSidebar.map((item) => {
                 const Icon = item.icon;
-                const active = desktopView === item.key;
+                const active = view === item.key;
 
                 return (
                   <button
@@ -948,12 +920,12 @@ export default function DashboardPage() {
 
             <div
               className={`mt-7 ${
-                desktopView === "dashboard"
+                view === "dashboard"
                   ? "grid grid-cols-[minmax(0,1.75fr)_24rem] gap-7"
                   : ""
               }`}
             >
-              {desktopView === "dashboard" ? (
+              {view === "dashboard" ? (
                 <>
               <section className="space-y-7">
                 <article id="dashboard-home" className="aksara-card p-8 flex flex-col gap-6">
@@ -1194,7 +1166,7 @@ export default function DashboardPage() {
                                 aria-label={task.completed ? "Mark task incomplete" : "Mark task complete"}
                                 className={`flex size-[1.35rem] items-center justify-center rounded-[0.4rem] border-[2.5px] transition-colors ${
                                   task.completed 
-                                    ? "border-maroon bg-maroon text-white" 
+                                    ? "border-maroon bg-brand text-white" 
                                     : "border-line bg-surface hover:border-maroon"
                                 }`}
                               >
@@ -1322,7 +1294,7 @@ export default function DashboardPage() {
                 </>
               ) : null}
 
-              {desktopView === "calendar" ? (
+              {view === "calendar" ? (
                 <section className="grid grid-cols-[minmax(0,1fr)_24rem] gap-7">
                   <div className="space-y-7">
                     <article className="aksara-card px-8 py-7">
@@ -1384,7 +1356,7 @@ export default function DashboardPage() {
                 </section>
               ) : null}
 
-              {desktopView === "tasks" ? (
+              {view === "tasks" ? (
                 <article className="aksara-card px-8 py-7">
                   <div className="flex items-start justify-between gap-6">
                     <div>
@@ -1485,7 +1457,7 @@ export default function DashboardPage() {
                                 aria-label={task.completed ? "Mark task incomplete" : "Mark task complete"}
                                 className={`flex size-[1.35rem] items-center justify-center rounded-[0.4rem] border-[2.5px] transition-colors ${
                                   task.completed 
-                                    ? "border-maroon bg-maroon text-white" 
+                                    ? "border-maroon bg-brand text-white" 
                                     : "border-line bg-surface hover:border-maroon"
                                 }`}
                               >
@@ -1508,7 +1480,7 @@ export default function DashboardPage() {
                 </article>
               ) : null}
 
-              {desktopView === "courses" ? (
+              {view === "courses" ? (
                 <section className="space-y-7">
                   <article className="aksara-card px-8 py-7">
                     <div className="flex items-start justify-between">
@@ -1553,7 +1525,7 @@ export default function DashboardPage() {
                 </section>
               ) : null}
 
-              {desktopView === "focus" && isDesktop ? (
+              {view === "focus" && isDesktop ? (
                 <FocusTimerView tasks={tasks} courses={courses} focusLogs={focusLogs} onRefresh={refresh} />
               ) : null}
             </div>
@@ -1563,7 +1535,7 @@ export default function DashboardPage() {
 
       <div className="mx-auto min-h-[calc(100vh-2rem)] max-w-[28rem] lg:hidden">
         <div className="px-2 pb-28 pt-[calc(1.5rem+env(safe-area-inset-top))]">
-          {mobileView === "dashboard" ? (
+          {view === "dashboard" ? (
             <section>
               <MobileTopBar
                 meta={syncLabel}
@@ -1657,7 +1629,7 @@ export default function DashboardPage() {
             </section>
           ) : null}
 
-          {mobileView === "calendar" ? (
+          {view === "calendar" ? (
             <section>
               <MobileTopBar
                 meta="Live schedule month"
@@ -1724,7 +1696,7 @@ export default function DashboardPage() {
             </section>
           ) : null}
 
-          {mobileView === "tasks" ? (
+          {view === "tasks" ? (
             <section>
               <div className="flex items-end justify-between gap-4">
                 <MobileTopBar
@@ -1811,7 +1783,7 @@ export default function DashboardPage() {
             </section>
           ) : null}
 
-          {mobileView === "courses" ? (
+          {view === "courses" ? (
             <section>
               <div className="flex items-end justify-between gap-4">
                 <MobileTopBar
@@ -1864,7 +1836,7 @@ export default function DashboardPage() {
             </section>
           ) : null}
 
-          {mobileView === "focus" ? (
+          {view === "focus" ? (
             <section>
               <MobileTopBar
                 meta="Focus pomodoro timer"
@@ -1888,7 +1860,7 @@ export default function DashboardPage() {
         <div className="grid grid-cols-5 gap-0">
               {mobileTabs.map((item) => {
                 const Icon = item.icon;
-                const active = mobileView === item.key;
+                const active = view === item.key;
 
                 return (
                   <button

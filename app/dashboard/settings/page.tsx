@@ -76,7 +76,7 @@ export default function SettingsPage() {
           Back
         </Link>
         <div className="flex items-center gap-3">
-          <div className="flex size-11 items-center justify-center rounded-[1.1rem] bg-maroon text-gold shadow-[0_12px_28px_rgba(131,16,62,0.18)]">
+          <div className="flex size-11 items-center justify-center rounded-[1.1rem] bg-brand text-gold shadow-[0_12px_28px_rgba(131,16,62,0.18)]">
             <GraduationCap className="size-5" />
           </div>
         </div>
@@ -119,7 +119,7 @@ export default function SettingsPage() {
             aria-label="Enable reminders"
             onClick={() => setRemindersEnabled((v) => !v)}
             className={`relative h-7 w-12 shrink-0 rounded-full transition-colors ${
-              remindersEnabled ? "bg-maroon" : "bg-line"
+              remindersEnabled ? "bg-brand" : "bg-line"
             }`}
           >
             <span
@@ -145,7 +145,7 @@ export default function SettingsPage() {
                 onClick={() => toggleLeadTime(opt.minutes)}
                 className={`rounded-[1rem] border px-4 py-3 text-sm font-semibold transition ${
                   active
-                    ? "border-maroon bg-maroon text-white shadow-[0_10px_24px_rgba(131,16,62,0.18)]"
+                    ? "border-maroon bg-brand text-white shadow-[0_10px_24px_rgba(131,16,62,0.18)]"
                     : "border-line bg-surface text-ink-muted hover:border-line"
                 }`}
               >

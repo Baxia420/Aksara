@@ -17,7 +17,7 @@ export default function DashboardError({
   return (
     <div className="flex min-h-screen flex-col items-center justify-center p-4">
       <div className="aksara-card flex w-full max-w-md flex-col items-center rounded-[2.5rem] p-10 text-center">
-        <div className="mb-6 flex size-16 items-center justify-center rounded-[1.25rem] bg-maroon-bright text-white">
+        <div className="mb-6 flex size-16 items-center justify-center rounded-[1.25rem] bg-brand-bright text-white">
           <TriangleAlert className="size-7" />
         </div>
         <h2 className="aksara-serif mb-2 text-3xl font-semibold text-ink">

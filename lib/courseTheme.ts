@@ -11,12 +11,12 @@ export const coursePillClasses = [
 ];
 
 export const courseTints = [
-  "bg-[#fbf4f1]",
-  "bg-[#fdf8f4]",
-  "bg-[#eef4f7]",
-  "bg-[#eff3f7]",
-  "bg-[#f8f7f3]",
-  "bg-[#fcf4e7]",
+  "bg-course-0",
+  "bg-course-1",
+  "bg-course-2",
+  "bg-course-3",
+  "bg-course-4",
+  "bg-course-5",
 ];
 
 export const courseBarColors = [

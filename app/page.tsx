@@ -26,7 +26,7 @@ const loginHighlights = [
 function BrandMark() {
   return (
     <div className="flex items-center gap-3">
-      <div className="flex size-14 items-center justify-center rounded-2xl bg-maroon text-gold shadow-[0_12px_28px_rgba(131,16,62,0.18)]">
+      <div className="flex size-14 items-center justify-center rounded-2xl bg-brand text-gold shadow-[0_12px_28px_rgba(131,16,62,0.18)]">
         <GraduationCap className="size-6 stroke-[2.2]" />
       </div>
       <div>

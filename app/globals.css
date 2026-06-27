@@ -27,6 +27,14 @@
   --ink-muted: #6f5b64; /* secondary */
   --ink-soft: #80707a; /* tertiary / faint labels */
 
+  /* Per-course tints (card backgrounds) — theme-aware */
+  --course-0: #fbf4f1;
+  --course-1: #fdf8f4;
+  --course-2: #eef4f7;
+  --course-3: #eff3f7;
+  --course-4: #f8f7f3;
+  --course-5: #fcf4e7;
+
   /* Fixed decorative backdrop (light) */
   --backdrop:
     radial-gradient(circle at 13% 10%, rgba(226, 162, 47, 0.30), transparent 22%),
@@ -50,11 +58,20 @@
   --ink-muted: #c3aab3;
   --ink-soft: #a18d97;
 
-  /* Brightened maroon family so accents & fills read on a dark surface. */
-  --maroon: #b8466f;
-  --maroon-bright: #db7099;
-  --maroon-deep: #c95d85;
-  --maroon-soft: #d28aa9;
+  /* Maroon TEXT accents only — soft light roses that read elegantly on dark.
+     (Solid maroon fills use the fixed --color-brand* tokens instead.) */
+  --maroon: #d98aa6;
+  --maroon-bright: #ec9fb8;
+  --maroon-deep: #e295af;
+  --maroon-soft: #cf90ab;
+
+  /* Per-course tints — subtle hued dark surfaces */
+  --course-0: #2e2026;
+  --course-1: #2d2620;
+  --course-2: #1e2731;
+  --course-3: #222634;
+  --course-4: #282821;
+  --course-5: #2f2a1d;
 
   --backdrop:
     radial-gradient(circle at 13% 8%, rgba(226, 162, 47, 0.10), transparent 26%),
@@ -81,6 +98,18 @@
   --color-ink-body: var(--ink-body);
   --color-ink-muted: var(--ink-muted);
   --color-ink-soft: var(--ink-soft);
+
+  /* Fixed brand fills — rich maroon in BOTH themes (buttons, tiles, toggles). */
+  --color-brand: #83103e;
+  --color-brand-bright: #a31657;
+
+  /* Per-course tints (theme-aware) */
+  --color-course-0: var(--course-0);
+  --color-course-1: var(--course-1);
+  --color-course-2: var(--course-2);
+  --color-course-3: var(--course-3);
+  --color-course-4: var(--course-4);
+  --color-course-5: var(--course-5);
 }
 
 * {
@@ -168,7 +197,7 @@ input {
 }
 
 .aksara-primary-button {
-  background: linear-gradient(180deg, var(--maroon-bright) 0%, var(--maroon) 100%);
+  background: linear-gradient(180deg, #a71657 0%, #83103e 100%);
   box-shadow:
     0 10px 20px rgba(131, 16, 62, 0.22),
     inset 0 1px 0 rgba(255, 255, 255, 0.28);
@@ -197,7 +226,7 @@ input {
 }
 
 .aksara-sidebar-button-active {
-  background: linear-gradient(180deg, var(--maroon-bright) 0%, var(--maroon) 100%);
+  background: linear-gradient(180deg, #a71657 0%, #83103e 100%);
   color: #fff5f7;
   box-shadow: 0 12px 26px rgba(131, 16, 62, 0.22);
 }
@@ -210,8 +239,8 @@ input {
 }
 
 .aksara-chip-active {
-  border-color: color-mix(in srgb, var(--maroon) 35%, transparent);
-  background: var(--maroon);
+  border-color: rgba(131, 16, 62, 0.25);
+  background: #8d1748;
   color: #fff2f4;
   box-shadow: 0 12px 24px rgba(131, 16, 62, 0.16);
 }

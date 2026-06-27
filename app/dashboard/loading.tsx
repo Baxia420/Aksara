@@ -11,7 +11,7 @@ export default function DashboardLoading() {
           />
           <div className="absolute inset-2 rounded-full border border-maroon/20" />
           <div
-            className="flex size-16 animate-pulse items-center justify-center rounded-[1.25rem] bg-maroon text-gold shadow-[0_12px_28px_rgba(131,16,62,0.22)]"
+            className="flex size-16 animate-pulse items-center justify-center rounded-[1.25rem] bg-brand text-gold shadow-[0_12px_28px_rgba(131,16,62,0.22)]"
             style={{ animationDuration: "2s" }}
           >
             <GraduationCap className="size-7" />

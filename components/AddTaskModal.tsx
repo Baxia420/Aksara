@@ -191,7 +191,7 @@ export function AddTaskModal({ isOpen, onClose, tasks = [], courses = [], taskTo
                     <button 
                       type="button" 
                       onClick={handleDelete}
-                      className="px-3 py-1.5 text-xs font-semibold text-white bg-maroon-bright hover:bg-maroon rounded-lg transition"
+                      className="px-3 py-1.5 text-xs font-semibold text-white bg-brand-bright hover:bg-brand rounded-lg transition"
                     >
                       Yes
                     </button>

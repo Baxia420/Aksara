@@ -594,7 +594,7 @@ export function FocusTimerView({
                     key={`focus-dot-${i}`}
                     className={`w-3.5 h-3.5 rounded-full transition-colors ${
                       i < completedFocus
-                        ? "bg-maroon shadow-[0_0_8px_rgba(131,16,62,0.4)]"
+                        ? "bg-brand shadow-[0_0_8px_rgba(131,16,62,0.4)]"
                         : "bg-line/30 border border-line/60"
                     }`}
                   />
@@ -664,7 +664,7 @@ export function FocusTimerView({
                 <div
                   className={`w-full rounded-t-[4px] transition-all duration-300 ${
                     bar.isToday
-                      ? "bg-maroon shadow-[0_0_12px_rgba(131,16,62,0.2)]"
+                      ? "bg-brand shadow-[0_0_12px_rgba(131,16,62,0.2)]"
                       : bar.isFuture && isCurrentWeek
                       ? "bg-line/20 border border-dashed border-line/40"
                       : "bg-line/40 hover:bg-maroon/40"

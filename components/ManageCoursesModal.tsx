@@ -113,21 +113,21 @@ export function ManageCoursesModal({ isOpen, onClose, onRefresh, courses = [] }:
         </div>
 
         {errorMsg && (
-          <div className="mb-4 p-3 bg-[#fff7fa] text-[#9f4568] border border-[#dfb1c1] rounded-xl text-sm">
+          <div className="mb-4 p-3 bg-surface-soft text-maroon-soft border border-[#dfb1c1] rounded-xl text-sm">
             {errorMsg}
           </div>
         )}
 
-        <div className="bg-[#fcfafb] border border-[#ecd9de] rounded-2xl p-5 mb-6">
+        <div className="bg-surface-soft border border-line rounded-2xl p-5 mb-6">
           <h3 className="text-ink-soft font-semibold text-sm mb-3 uppercase tracking-wider">Add New Course</h3>
           <form action={handleAddCourse} className="flex gap-3 items-start">
             <div className="w-1/4">
-              <input required name="code" value={newCode} onChange={(e) => setNewCode(e.target.value)} placeholder="Code (e.g. SCSE1203)" className="w-full border border-[#ecd9de] rounded-[0.85rem] px-3 py-2.5 text-sm outline-none focus:border-maroon-bright" />
+              <input required name="code" value={newCode} onChange={(e) => setNewCode(e.target.value)} placeholder="Code (e.g. SCSE1203)" className="w-full border border-line rounded-[0.85rem] px-3 py-2.5 text-sm outline-none focus:border-maroon-bright" />
             </div>
             <div className="flex-1">
-              <input required name="title" value={newTitle} onChange={(e) => setNewTitle(e.target.value)} placeholder="Title" className="w-full border border-[#ecd9de] rounded-[0.85rem] px-3 py-2.5 text-sm outline-none focus:border-maroon-bright" />
+              <input required name="title" value={newTitle} onChange={(e) => setNewTitle(e.target.value)} placeholder="Title" className="w-full border border-line rounded-[0.85rem] px-3 py-2.5 text-sm outline-none focus:border-maroon-bright" />
             </div>
-            <div className="flex items-center gap-1 border border-[#ecd9de] rounded-[0.85rem] p-1.5 bg-white">
+            <div className="flex items-center gap-1 border border-line rounded-[0.85rem] p-1.5 bg-surface">
               {coursePillClasses.map((pillClass, i) => (
                 <button
                   key={i}
@@ -150,7 +150,7 @@ export function ManageCoursesModal({ isOpen, onClose, onRefresh, courses = [] }:
             <p className="text-ink-soft text-sm text-center py-4">No courses explicitly added yet.</p>
           ) : (
             courses.map(course => (
-              <div key={course.id} className="flex items-center justify-between border border-[#ecd9de] bg-white rounded-[1rem] p-4 shadow-sm hover:shadow-md transition">
+              <div key={course.id} className="flex items-center justify-between border border-line bg-surface rounded-[1rem] p-4 shadow-sm hover:shadow-md transition">
                 <div>
                   <div className={`inline-block px-2.5 py-1 rounded-full text-xs font-semibold border ${coursePillClasses[course.colorIndex] || coursePillClasses[0]}`}>
                     {course.code}
@@ -169,7 +169,7 @@ export function ManageCoursesModal({ isOpen, onClose, onRefresh, courses = [] }:
                       />
                     ))}
                   </div>
-                  <button onClick={() => setCourseToDelete({ id: course.id, code: course.code })} disabled={isSubmitting} aria-label={`Remove ${course.code}`} className="text-ink-soft hover:text-maroon-bright transition p-1.5 rounded-lg hover:bg-[#fff7fa]">
+                  <button onClick={() => setCourseToDelete({ id: course.id, code: course.code })} disabled={isSubmitting} aria-label={`Remove ${course.code}`} className="text-ink-soft hover:text-maroon-bright transition p-1.5 rounded-lg hover:bg-surface-soft">
                     <svg className="size-5" fill="none" viewBox="0 0 24 24" stroke="currentColor" strokeWidth={2}>
                       <path strokeLinecap="round" strokeLinejoin="round" d="M19 7l-.867 12.142A2 2 0 0116.138 21H7.862a2 2 0 01-1.995-1.858L5 7m5 4v6m4-6v6m1-10V4a1 1 0 00-1-1h-4a1 1 0 00-1 1v3M4 7h16" />
                     </svg>

@@ -403,15 +403,15 @@ export function FocusTimerView({
           <div className="absolute top-1/2 left-1/2 -translate-x-1/2 -translate-y-1/2 w-64 h-64 bg-maroon/4 rounded-full blur-3xl z-0 pointer-events-none" />
 
           {/* Mode selectors */}
-          <div className="flex flex-wrap justify-center gap-2 bg-[#f4ede7]/60 p-1.5 rounded-2xl backdrop-blur-md border border-[#ddbfc4]/30 z-10 mb-8 w-full max-w-sm">
+          <div className="flex flex-wrap justify-center gap-2 bg-surface-soft/60 p-1.5 rounded-2xl backdrop-blur-md border border-line/30 z-10 mb-8 w-full max-w-sm">
             {(["focus", "shortBreak", "longBreak"] as TimerMode[]).map((mode) => (
               <button
                 key={mode}
                 onClick={() => handleModeChange(mode)}
                 className={`flex-1 min-w-[6rem] px-3 py-2 text-xs font-semibold rounded-xl transition-all duration-200 ${
                   timerMode === mode
-                    ? "bg-white text-maroon shadow-[0_4px_12px_rgba(131,16,62,0.06)]"
-                    : "text-ink-muted hover:bg-white/40"
+                    ? "bg-surface text-maroon shadow-[0_4px_12px_rgba(131,16,62,0.06)]"
+                    : "text-ink-muted hover:bg-surface/40"
                 }`}
               >
                 {mode === "focus" && "Focus (25m)"}
@@ -453,7 +453,7 @@ export function FocusTimerView({
               <span className="text-[0.68rem] font-bold text-maroon-soft tracking-[0.22em] uppercase mb-2">
                 {MODE_LABELS[timerMode]}
               </span>
-              <span className="aksara-serif text-[#2c1d24] text-[4.4rem] font-bold leading-none tracking-tight">
+              <span className="aksara-serif text-ink text-[4.4rem] font-bold leading-none tracking-tight">
                 {formatTime(timeLeft)}
               </span>
             </div>
@@ -463,7 +463,7 @@ export function FocusTimerView({
           <div className="flex items-center gap-5 z-10 mb-8">
             <button
               onClick={handleReset}
-              className="w-12 h-12 rounded-full border border-[#ddbfc4]/40 text-ink-muted flex items-center justify-center hover:bg-[#fffaf6]/70 transition-all active:scale-95 shadow-sm"
+              className="w-12 h-12 rounded-full border border-line/40 text-ink-muted flex items-center justify-center hover:bg-surface/70 transition-all active:scale-95 shadow-sm"
               title="Reset Timer"
             >
               <RotateCcw className="size-4.5" />
@@ -483,7 +483,7 @@ export function FocusTimerView({
 
             <button
               onClick={handleSkip}
-              className="w-12 h-12 rounded-full border border-[#ddbfc4]/40 text-ink-muted flex items-center justify-center hover:bg-[#fffaf6]/70 transition-all active:scale-95 shadow-sm"
+              className="w-12 h-12 rounded-full border border-line/40 text-ink-muted flex items-center justify-center hover:bg-surface/70 transition-all active:scale-95 shadow-sm"
               title="Skip Session"
             >
               <SkipForward className="size-4.5" />
@@ -492,29 +492,29 @@ export function FocusTimerView({
 
           {/* Task selector */}
           <div className="w-full max-w-md z-10">
-            <label className="block text-[0.68rem] font-bold text-[#9e8b93] tracking-[0.15em] uppercase mb-2.5 text-center">
+            <label className="block text-[0.68rem] font-bold text-ink-soft tracking-[0.15em] uppercase mb-2.5 text-center">
               What are you focusing on?
             </label>
             <div className="relative">
               <button
                 onClick={() => setIsDropdownOpen(!isDropdownOpen)}
-                className="w-full flex items-center justify-between px-5 py-4 rounded-xl border border-[#ddbfc4]/40 bg-[#fffaf6]/90 hover:border-maroon/40 transition-colors text-left group"
+                className="w-full flex items-center justify-between px-5 py-4 rounded-xl border border-line/40 bg-surface/90 hover:border-maroon/40 transition-colors text-left group"
               >
                 <div className="flex items-center gap-3 truncate">
                   <BookOpen className="size-4.5 text-maroon shrink-0" />
-                  <span className="text-base text-[#2c1d24] truncate">
+                  <span className="text-base text-ink truncate">
                     {selectedTask
                       ? `${selectedTask.courseCode} — ${selectedTask.title}`
                       : "Select a task..."}
                   </span>
                 </div>
-                <ChevronDown className="size-4.5 text-[#9e8b93] group-hover:text-maroon transition-colors shrink-0" />
+                <ChevronDown className="size-4.5 text-ink-soft group-hover:text-maroon transition-colors shrink-0" />
               </button>
 
               {isDropdownOpen && (
-                <div className="absolute top-full left-0 right-0 mt-2 max-h-52 overflow-y-auto bg-white border border-[#ddbfc4]/40 rounded-xl shadow-[0_12px_32px_rgba(131,16,62,0.1)] z-30 aksara-scrollbar">
+                <div className="absolute top-full left-0 right-0 mt-2 max-h-52 overflow-y-auto bg-surface border border-line/40 rounded-xl shadow-[0_12px_32px_rgba(131,16,62,0.1)] z-30 aksara-scrollbar">
                   {activeTasks.length === 0 ? (
-                    <div className="p-4 text-[#8a747e] text-center text-sm">
+                    <div className="p-4 text-ink-soft text-center text-sm">
                       No pending tasks found.
                     </div>
                   ) : (
@@ -525,7 +525,7 @@ export function FocusTimerView({
                           setSelectedTaskId(t.id);
                           setIsDropdownOpen(false);
                         }}
-                        className={`w-full text-left px-5 py-3 text-sm hover:bg-maroon/5 transition-colors border-b border-[#ddbfc4]/10 last:border-none flex items-center justify-between ${
+                        className={`w-full text-left px-5 py-3 text-sm hover:bg-maroon/5 transition-colors border-b border-line/10 last:border-none flex items-center justify-between ${
                           selectedTaskId === t.id
                             ? "text-maroon font-semibold bg-maroon/3"
                             : "text-ink-body"
@@ -553,17 +553,17 @@ export function FocusTimerView({
         {/* Today's Focus Card */}
         <article className="aksara-card rounded-[2rem] p-7 flex flex-col gap-6">
           <div>
-            <h3 className="text-xl font-bold text-[#2c1d24] mb-1">
+            <h3 className="text-xl font-bold text-ink mb-1">
               Today&apos;s Focus
             </h3>
-            <p className="text-sm text-[#8a747e]">Stay on track with your goals.</p>
+            <p className="text-sm text-ink-soft">Stay on track with your goals.</p>
           </div>
 
           <div className="flex flex-col gap-4">
             {/* Total time progress */}
             <div>
               <div className="flex justify-between items-end mb-2">
-                <span className="text-[0.64rem] font-semibold text-[#9e8b93] tracking-widest uppercase">
+                <span className="text-[0.64rem] font-semibold text-ink-soft tracking-widest uppercase">
                   Total Focus Time
                 </span>
                 <span className="aksara-serif text-[1.6rem] font-bold text-maroon leading-none">
@@ -571,21 +571,21 @@ export function FocusTimerView({
                   {todayFocusMinutes}m
                 </span>
               </div>
-              <div className="w-full h-1 bg-[#ddbfc4]/30 rounded-full overflow-hidden">
+              <div className="w-full h-1 bg-line/30 rounded-full overflow-hidden">
                 <div
                   className="h-full bg-gradient-to-r from-maroon to-gold rounded-full transition-all duration-500"
                   style={{ width: `${progressPercent}%` }}
                 />
               </div>
-              <div className="flex justify-between items-center mt-1 text-[10px] text-[#9e8b93] font-semibold">
+              <div className="flex justify-between items-center mt-1 text-[10px] text-ink-soft font-semibold">
                 <span>Goal: 4h</span>
                 <span>{progressPercent}%</span>
               </div>
             </div>
 
             {/* Completed cycles */}
-            <div className="pt-4 border-t border-[#ddbfc4]/20">
-              <span className="text-[0.64rem] font-semibold text-[#9e8b93] tracking-widest uppercase block mb-3">
+            <div className="pt-4 border-t border-line/20">
+              <span className="text-[0.64rem] font-semibold text-ink-soft tracking-widest uppercase block mb-3">
                 Completed Cycles
               </span>
               <div className="flex flex-wrap items-center gap-2">
@@ -595,7 +595,7 @@ export function FocusTimerView({
                     className={`w-3.5 h-3.5 rounded-full transition-colors ${
                       i < completedFocus
                         ? "bg-maroon shadow-[0_0_8px_rgba(131,16,62,0.4)]"
-                        : "bg-[#ddbfc4]/30 border border-[#ddbfc4]/60"
+                        : "bg-line/30 border border-line/60"
                     }`}
                   />
                 ))}
@@ -605,12 +605,12 @@ export function FocusTimerView({
                     className={`w-3.5 h-3.5 rounded-full transition-colors ${
                       i < completedBreaks
                         ? "bg-gold shadow-[0_0_8px_rgba(226,162,47,0.4)]"
-                        : "bg-[#ddbfc4]/30 border border-[#ddbfc4]/60"
+                        : "bg-line/30 border border-line/60"
                     }`}
                   />
                 ))}
               </div>
-              <p className="text-xs text-[#8a747e] mt-3 font-semibold">
+              <p className="text-xs text-ink-soft mt-3 font-semibold">
                 {completedFocus} focus sessions, {completedBreaks} breaks
               </p>
             </div>
@@ -622,27 +622,27 @@ export function FocusTimerView({
           {/* Header row */}
           <div className="flex justify-between items-center">
             <div className="flex items-center gap-2">
-              <TrendingUp className="size-4 text-[#8a747e]" />
-              <span className="text-base font-bold text-[#2c1d24]">Weekly Trend</span>
+              <TrendingUp className="size-4 text-ink-soft" />
+              <span className="text-base font-bold text-ink">Weekly Trend</span>
             </div>
           </div>
 
           {/* Week navigation */}
-          <div className="flex items-center justify-between bg-[#f4ede7]/60 rounded-xl px-3 py-2 border border-[#ddbfc4]/25">
+          <div className="flex items-center justify-between bg-surface-soft/60 rounded-xl px-3 py-2 border border-line/25">
             <button
               onClick={() => setWeekOffset((o) => o - 1)}
-              className="w-7 h-7 rounded-lg flex items-center justify-center text-ink-muted hover:bg-white/70 hover:text-maroon transition-all"
+              className="w-7 h-7 rounded-lg flex items-center justify-center text-ink-muted hover:bg-surface/70 hover:text-maroon transition-all"
               title="Previous week"
             >
               <ChevronLeft className="size-3.5" />
             </button>
-            <span className="text-[0.65rem] font-bold text-[#9e8b93] tracking-wider uppercase text-center">
+            <span className="text-[0.65rem] font-bold text-ink-soft tracking-wider uppercase text-center">
               {isCurrentWeek ? "This Week" : weekLabel}
             </span>
             <button
               onClick={() => setWeekOffset((o) => o + 1)}
               disabled={isCurrentWeek}
-              className="w-7 h-7 rounded-lg flex items-center justify-center text-ink-muted hover:bg-white/70 hover:text-maroon transition-all disabled:opacity-30 disabled:cursor-not-allowed disabled:hover:bg-transparent disabled:hover:text-ink-muted"
+              className="w-7 h-7 rounded-lg flex items-center justify-center text-ink-muted hover:bg-surface/70 hover:text-maroon transition-all disabled:opacity-30 disabled:cursor-not-allowed disabled:hover:bg-transparent disabled:hover:text-ink-muted"
               title="Next week"
             >
               <ChevronRight className="size-3.5" />
@@ -657,7 +657,7 @@ export function FocusTimerView({
                 className="flex-1 flex flex-col items-center h-full justify-end relative group"
               >
                 {/* Tooltip */}
-                <span className="absolute bottom-full mb-1 text-[10px] font-bold text-maroon opacity-0 group-hover:opacity-100 transition-opacity bg-white/90 border border-[#ddbfc4]/30 px-1.5 py-0.5 rounded shadow-sm z-10 whitespace-nowrap">
+                <span className="absolute bottom-full mb-1 text-[10px] font-bold text-maroon opacity-0 group-hover:opacity-100 transition-opacity bg-surface/90 border border-line/30 px-1.5 py-0.5 rounded shadow-sm z-10 whitespace-nowrap">
                   {bar.val}h
                 </span>
                 {/* Bar */}
@@ -666,8 +666,8 @@ export function FocusTimerView({
                     bar.isToday
                       ? "bg-maroon shadow-[0_0_12px_rgba(131,16,62,0.2)]"
                       : bar.isFuture && isCurrentWeek
-                      ? "bg-[#ddbfc4]/20 border border-dashed border-[#ddbfc4]/40"
-                      : "bg-[#ddbfc4]/40 hover:bg-maroon/40"
+                      ? "bg-line/20 border border-dashed border-line/40"
+                      : "bg-line/40 hover:bg-maroon/40"
                   }`}
                   style={{ height: `${bar.pct}%` }}
                 />
@@ -676,7 +676,7 @@ export function FocusTimerView({
           </div>
 
           {/* Day labels */}
-          <div className="flex justify-between text-[9px] font-bold text-[#9e8b93] uppercase tracking-wider px-0.5">
+          <div className="flex justify-between text-[9px] font-bold text-ink-soft uppercase tracking-wider px-0.5">
             {DAY_LABELS.map((d, i) => (
               <span
                 key={i}
@@ -696,10 +696,10 @@ export function FocusTimerView({
           <div className="flex items-start justify-between gap-2">
             <div>
               <div className="flex items-center gap-2 mb-1">
-                <BarChart2 className="size-4 text-[#8a747e]" />
-                <span className="text-base font-bold text-[#2c1d24]">Time by Topic</span>
+                <BarChart2 className="size-4 text-ink-soft" />
+                <span className="text-base font-bold text-ink">Time by Topic</span>
               </div>
-              <p className="text-[0.65rem] text-[#9e8b93] font-semibold tracking-wide uppercase">
+              <p className="text-[0.65rem] text-ink-soft font-semibold tracking-wide uppercase">
                 {isCurrentWeek ? "This week" : weekLabel}
               </p>
             </div>
@@ -708,7 +708,7 @@ export function FocusTimerView({
                 <span className="aksara-serif text-[1.35rem] font-bold text-maroon leading-none">
                   {formatMinutes(weekTotalMinutes)}
                 </span>
-                <p className="text-[0.6rem] text-[#9e8b93] font-semibold uppercase tracking-wide mt-0.5">
+                <p className="text-[0.6rem] text-ink-soft font-semibold uppercase tracking-wide mt-0.5">
                   total
                 </p>
               </div>
@@ -718,10 +718,10 @@ export function FocusTimerView({
           {/* Content */}
           {taskTimeBreakdown.length === 0 ? (
             <div className="flex flex-col items-center justify-center py-8 gap-3">
-              <div className="w-12 h-12 rounded-2xl bg-[#f4ede7] flex items-center justify-center">
-                <Clock className="size-5 text-[#c9a0b0]" />
+              <div className="w-12 h-12 rounded-2xl bg-surface-soft flex items-center justify-center">
+                <Clock className="size-5 text-ink-soft" />
               </div>
-              <p className="text-sm text-[#9e8b93] font-semibold text-center leading-relaxed">
+              <p className="text-sm text-ink-soft font-semibold text-center leading-relaxed">
                 No focus sessions logged
                 <br />
                 <span className="font-normal text-xs">
@@ -750,22 +750,22 @@ export function FocusTimerView({
                         {group.courseCode}
                       </span>
                       <div className="flex items-baseline gap-1.5 shrink-0">
-                        <span className="text-sm font-bold text-[#2c1d24]">
+                        <span className="text-sm font-bold text-ink">
                           {formatMinutes(courseMins)}
                         </span>
-                        <span className="text-[0.6rem] text-[#9e8b93] font-semibold">
+                        <span className="text-[0.6rem] text-ink-soft font-semibold">
                           {Math.round((group.totalSeconds / (taskTimeBreakdown.reduce((s, g) => s + g.totalSeconds, 0))) * 100)}%
                         </span>
                       </div>
                     </div>
 
                     {/* Course title */}
-                    <p className="text-[0.7rem] text-[#8a747e] font-medium -mt-1.5 pl-0.5 truncate">
+                    <p className="text-[0.7rem] text-ink-soft font-medium -mt-1.5 pl-0.5 truncate">
                       {group.courseTitle}
                     </p>
 
                     {/* Course total bar */}
-                    <div className="w-full h-1.5 bg-[#ddbfc4]/20 rounded-full overflow-hidden">
+                    <div className="w-full h-1.5 bg-line/20 rounded-full overflow-hidden">
                       <div
                         className={`h-full rounded-full transition-all duration-500 ${barClass}`}
                         style={{ width: `${courseWidthPct}%` }}
@@ -786,12 +786,12 @@ export function FocusTimerView({
                               <span className="text-xs text-ink-body font-medium truncate flex-1 leading-tight">
                                 {task.taskTitle}
                               </span>
-                              <span className="text-xs font-semibold text-[#7a6472] shrink-0">
+                              <span className="text-xs font-semibold text-ink-soft shrink-0">
                                 {formatMinutes(taskMins)}
                               </span>
                             </div>
                             {/* Task sub-bar (relative to course total) */}
-                            <div className="w-full h-1 bg-[#ddbfc4]/15 rounded-full overflow-hidden">
+                            <div className="w-full h-1 bg-line/15 rounded-full overflow-hidden">
                               <div
                                 className={`h-full rounded-full opacity-50 transition-all duration-500 ${barClass}`}
                                 style={{ width: `${taskWidthPct}%` }}

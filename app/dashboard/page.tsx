@@ -134,7 +134,7 @@ function BrandLockup() {
         <p className="aksara-serif text-[2rem] font-semibold leading-none text-maroon">
           Aksara
         </p>
-        <p className="aksara-mono mt-1 text-[0.58rem] text-[#b07a88]">
+        <p className="aksara-mono mt-1 text-[0.58rem] text-maroon-soft">
           Academic OS
         </p>
       </div>
@@ -196,11 +196,11 @@ function CalendarWidget({
     <div className={compact ? "aksara-card p-5" : "aksara-card p-7"}>
       <div className="flex items-start justify-between gap-4">
         <div>
-          <h2 className={`aksara-serif ${headingClass} text-[#2b1b22]`}>
+          <h2 className={`aksara-serif ${headingClass} text-ink`}>
             {formatMonthYear(monthDate).split(" ")[0]}{" "}
             <span className="text-maroon-bright">{year}</span>
           </h2>
-          <p className="aksara-mono mt-2 text-[0.58rem] text-[#9f8b93]">
+          <p className="aksara-mono mt-2 text-[0.58rem] text-ink-soft">
             Live schedule month
           </p>
         </div>
@@ -208,7 +208,7 @@ function CalendarWidget({
           <button
             type="button"
             onClick={onPreviousMonth}
-            className="aksara-icon-button size-9 rounded-full transition hover:border-[#d8b7c0] hover:bg-white"
+            className="aksara-icon-button size-9 rounded-full transition hover:border-line hover:bg-surface"
             aria-label="Previous month"
           >
             <ChevronLeft className="size-4" />
@@ -216,7 +216,7 @@ function CalendarWidget({
           <button
             type="button"
             onClick={onNextMonth}
-            className="aksara-icon-button size-9 rounded-full transition hover:border-[#d8b7c0] hover:bg-white"
+            className="aksara-icon-button size-9 rounded-full transition hover:border-line hover:bg-surface"
             aria-label="Next month"
           >
             <ChevronRight className="size-4" />
@@ -228,7 +228,7 @@ function CalendarWidget({
         {dayNames.map((day, dayIndex) => (
           <span
             key={`${day}-${dayIndex}`}
-            className="aksara-mono text-[0.55rem] text-[#9b8790]"
+            className="aksara-mono text-[0.55rem] text-ink-soft"
           >
             {day}
           </span>
@@ -265,11 +265,11 @@ function CalendarWidget({
                     }
                     className={`flex h-10 w-10 items-center justify-center rounded-[1rem] text-base font-semibold ${
                       isActive
-                        ? "bg-maroon-bright text-[#fff5f7] shadow-[0_10px_20px_rgba(131,16,62,0.22)]"
-                        : "text-[#46333b]"
+                        ? "bg-maroon-bright text-white shadow-[0_10px_20px_rgba(131,16,62,0.22)]"
+                        : "text-ink-body"
                     } ${
                       hasDayTasks
-                        ? "cursor-pointer transition hover:bg-[#fff3f7] hover:text-maroon-bright focus-visible:outline focus-visible:outline-2 focus-visible:outline-offset-2 focus-visible:outline-maroon-bright"
+                        ? "cursor-pointer transition hover:bg-surface-soft hover:text-maroon-bright focus-visible:outline focus-visible:outline-2 focus-visible:outline-offset-2 focus-visible:outline-maroon-bright"
                         : "cursor-default"
                     }`}
                   >
@@ -284,7 +284,7 @@ function CalendarWidget({
                     ))}
                   </div>
                   {hasDayTasks ? (
-                    <div className="pointer-events-none absolute left-1/2 top-12 z-30 hidden w-64 max-w-[calc(100vw-3rem)] -translate-x-1/2 rounded-[1.15rem] border border-[#ecd9de] bg-[#fffaf6] p-4 text-left shadow-[0_18px_34px_rgba(131,16,62,0.14)] group-hover:block group-focus-within:block">
+                    <div className="pointer-events-none absolute left-1/2 top-12 z-30 hidden w-64 max-w-[calc(100vw-3rem)] -translate-x-1/2 rounded-[1.15rem] border border-line bg-surface p-4 text-left shadow-[0_18px_34px_rgba(131,16,62,0.14)] group-hover:block group-focus-within:block">
                       <p className="aksara-mono text-[0.52rem] text-maroon-soft">
                         {dateLabel}
                       </p>
@@ -301,17 +301,17 @@ function CalendarWidget({
                                 <span className="text-xs font-semibold text-maroon-bright">
                                   {task.courseCode}
                                 </span>
-                                <span className="flex items-center gap-1.5 text-xs text-[#8a747e]">
+                                <span className="flex items-center gap-1.5 text-xs text-ink-soft">
                                   <span
                                     className={`size-1.5 rounded-full ${markerClassNames[tone]}`}
                                   />
                                   {markerLabels[tone]}
                                 </span>
                               </div>
-                              <p className="mt-1 text-sm font-semibold leading-5 text-[#2c1d24]">
+                              <p className="mt-1 text-sm font-semibold leading-5 text-ink">
                                 {task.title}
                               </p>
-                              <p className="mt-1 text-xs text-[#86717b]">
+                              <p className="mt-1 text-xs text-ink-soft">
                                 {task.type} / {formatDueDateTime(task)}
                               </p>
                             </div>
@@ -330,7 +330,7 @@ function CalendarWidget({
       </div>
 
       <div className="aksara-divider mt-6" />
-      <div className="mt-4 flex flex-wrap gap-5 text-sm text-[#8a747e]">
+      <div className="mt-4 flex flex-wrap gap-5 text-sm text-ink-soft">
         <span className="flex items-center gap-2">
           <span className="size-2 rounded-full bg-[#a91c58]" />
           Overdue
@@ -390,13 +390,13 @@ function MobileTopBar({
     <div>
       <div className="flex items-start justify-between gap-4">
         <div>
-          <p className="aksara-mono text-[0.6rem] text-[#a14a6a]">{meta}</p>
-          <h1 className="aksara-serif mt-2 text-[3.45rem] leading-[0.82] tracking-[-0.04em] text-[#24161d]">
+          <p className="aksara-mono text-[0.6rem] text-maroon-soft">{meta}</p>
+          <h1 className="aksara-serif mt-2 text-[3.45rem] leading-[0.82] tracking-[-0.04em] text-ink">
             {title}
             {accent ? (
               <>
                 <br />
-                <span className="italic text-[#b23d6b]">{accent}</span>
+                <span className="italic text-maroon-soft">{accent}</span>
               </>
             ) : null}
           </h1>
@@ -413,8 +413,8 @@ function MobileTopBar({
               {getInitials(userProfile)}
             </button>
             {isProfileOpen && (
-              <div className="absolute right-0 mt-2 w-52 rounded-2xl border border-[rgba(155,112,122,0.2)] bg-[#fffaf6] p-2 shadow-xl z-50 animate-in fade-in slide-in-from-top-2 duration-150">
-                <div className="px-4 py-2 text-xs font-semibold text-ink-soft border-b border-[#ecd9de] mb-1 text-left">
+              <div className="absolute right-0 mt-2 w-52 rounded-2xl border border-[rgba(155,112,122,0.2)] bg-surface p-2 shadow-xl z-50 animate-in fade-in slide-in-from-top-2 duration-150">
+                <div className="px-4 py-2 text-xs font-semibold text-ink-soft border-b border-line mb-1 text-left">
                   Signed in as <br />
                   <span className="text-ink break-all">{userProfile?.email}</span>
                 </div>
@@ -460,13 +460,13 @@ function MobileTaskCard({
           {formatRelativeLabel(task)}
         </p>
       </div>
-      <h3 className="mt-4 text-[1.38rem] font-semibold leading-8 text-[#2c1d24]">
+      <h3 className="mt-4 text-[1.38rem] font-semibold leading-8 text-ink">
         {task.title}
       </h3>
-      <div className="mt-3 text-sm text-[#8a747e]">{task.courseTitle}</div>
-      <div className="mt-4 flex items-center justify-between gap-4 text-sm text-[#826d76]">
+      <div className="mt-3 text-sm text-ink-soft">{task.courseTitle}</div>
+      <div className="mt-4 flex items-center justify-between gap-4 text-sm text-ink-soft">
         <p>{formatDueDateTime(task)}</p>
-        <p className="font-semibold text-[#8a6574]">
+        <p className="font-semibold text-maroon-soft">
           {task.completed ? "Completed" : task.type}
         </p>
       </div>
@@ -905,7 +905,7 @@ export default function DashboardPage() {
             <header className="flex items-center justify-between gap-8">
               <div className="flex min-w-0 items-center gap-6">
                 <BrandLockup />
-                <div className="hidden h-8 w-px bg-[#dcc9cf] xl:block" />
+                <div className="hidden h-8 w-px bg-line xl:block" />
               </div>
 
               <div className="flex items-center gap-4">
@@ -915,13 +915,13 @@ export default function DashboardPage() {
                     aria-label="Account menu"
                     aria-haspopup="menu"
                     aria-expanded={isProfileOpen}
-                    className="flex size-14 cursor-pointer items-center justify-center rounded-full border border-[#edd9de] bg-white text-sm font-bold text-maroon-bright shadow-[0_10px_24px_rgba(131,16,62,0.07)] hover:border-maroon-bright transition"
+                    className="flex size-14 cursor-pointer items-center justify-center rounded-full border border-line bg-surface text-sm font-bold text-maroon-bright shadow-[0_10px_24px_rgba(131,16,62,0.07)] hover:border-maroon-bright transition"
                   >
                     {getInitials(userProfile)}
                   </button>
                   {isProfileOpen && (
-                    <div className="absolute right-0 mt-2 w-56 rounded-2xl border border-[rgba(155,112,122,0.2)] bg-[#fffaf6] p-2 shadow-xl z-50 animate-in fade-in slide-in-from-top-2 duration-150">
-                      <div className="px-4 py-2 text-xs font-semibold text-ink-soft border-b border-[#ecd9de] mb-1 text-left">
+                    <div className="absolute right-0 mt-2 w-56 rounded-2xl border border-[rgba(155,112,122,0.2)] bg-surface p-2 shadow-xl z-50 animate-in fade-in slide-in-from-top-2 duration-150">
+                      <div className="px-4 py-2 text-xs font-semibold text-ink-soft border-b border-line mb-1 text-left">
                         Signed in as <br />
                         <span className="text-ink break-all">{userProfile?.email}</span>
                       </div>
@@ -984,7 +984,7 @@ export default function DashboardPage() {
                   </div>
 
                   {/* Horizontal Divider */}
-                  <div className="h-px bg-[#ddbfc4]/30 w-full" />
+                  <div className="h-px bg-line/30 w-full" />
 
                   {/* Row 2: Progress Analytics */}
                   <div className="flex flex-col md:flex-row items-center justify-between gap-12 pt-2 pb-1">
@@ -1014,22 +1014,22 @@ export default function DashboardPage() {
                         </svg>
                         <div className="absolute inset-0 flex flex-col items-center justify-center text-center mt-1">
                           <span className="aksara-serif text-[2.2rem] font-bold text-maroon leading-none">{summary.completionRate}%</span>
-                          <span className="text-[11px] text-[#9e8b93] font-bold uppercase tracking-wider mt-1.5">Finished</span>
+                          <span className="text-[11px] text-ink-soft font-bold uppercase tracking-wider mt-1.5">Finished</span>
                         </div>
                       </div>
                       <div>
-                        <h3 className="text-2xl font-bold text-[#2c1d24] mb-1">Tasks Progress</h3>
-                        <p className="text-base text-[#8a747e]">{summary.completed} of {summary.total} completed</p>
+                        <h3 className="text-2xl font-bold text-ink mb-1">Tasks Progress</h3>
+                        <p className="text-base text-ink-soft">{summary.completed} of {summary.total} completed</p>
                       </div>
                     </div>
 
                     {/* Middle: Focus Time This Week */}
                     <div className="flex flex-col gap-1.5 text-center md:text-left min-w-[14rem]">
-                      <span className="text-sm font-bold text-[#9e8b93] tracking-widest uppercase">FOCUS TIME THIS WEEK</span>
+                      <span className="text-sm font-bold text-ink-soft tracking-widest uppercase">FOCUS TIME THIS WEEK</span>
                       <span className="aksara-serif text-[2.8rem] font-bold text-maroon leading-none">
                         {weeklyFocusStats.hours}h {weeklyFocusStats.minutes}m
                       </span>
-                      <p className="text-xs text-[#9e8b93] font-semibold mt-1">Accumulated from Pomodoro sessions</p>
+                      <p className="text-xs text-ink-soft font-semibold mt-1">Accumulated from Pomodoro sessions</p>
                     </div>
 
                     {/* Right: Velocity Sparkline */}
@@ -1043,13 +1043,13 @@ export default function DashboardPage() {
                             title={bar.label}
                           >
                             {/* Hover Tooltip showing task count */}
-                            <span className="absolute bottom-full mb-1.5 left-1/2 -translate-x-1/2 text-[10px] font-bold text-maroon bg-white border border-[#ddbfc4]/30 px-1.5 py-0.5 rounded shadow-sm opacity-0 group-hover:opacity-100 transition-opacity z-10 whitespace-nowrap pointer-events-none">
+                            <span className="absolute bottom-full mb-1.5 left-1/2 -translate-x-1/2 text-[10px] font-bold text-maroon bg-surface border border-line/30 px-1.5 py-0.5 rounded shadow-sm opacity-0 group-hover:opacity-100 transition-opacity z-10 whitespace-nowrap pointer-events-none">
                               {bar.count} task{bar.count === 1 ? "" : "s"}
                             </span>
                           </div>
                         ))}
                       </div>
-                      <span className="text-xs text-[#9e8b93] font-bold uppercase tracking-wider mt-3 block text-center md:text-left">Velocity (Task completions)</span>
+                      <span className="text-xs text-ink-soft font-bold uppercase tracking-wider mt-3 block text-center md:text-left">Velocity (Task completions)</span>
                     </div>
                   </div>
                 </article>
@@ -1060,7 +1060,7 @@ export default function DashboardPage() {
                       <p className="aksara-mono text-[0.64rem] text-maroon-soft">
                         Course overview
                       </p>
-                      <h2 className="mt-3 text-[2.35rem] font-semibold leading-none text-[#291920]">
+                      <h2 className="mt-3 text-[2.35rem] font-semibold leading-none text-ink">
                         {courseCards.length} courses
                       </h2>
                     </div>
@@ -1073,18 +1073,18 @@ export default function DashboardPage() {
                     {courseCards.map((course) => (
                       <article
                         key={course.code}
-                        className={`rounded-[1.55rem] border border-[#ecd9de] ${course.tint} p-4 shadow-[0_10px_20px_rgba(131,16,62,0.04)]`}
+                        className={`rounded-[1.55rem] border border-line ${course.tint} p-4 shadow-[0_10px_20px_rgba(131,16,62,0.04)]`}
                       >
-                        <p className="aksara-mono text-[0.55rem] text-[#a94f6d]">
+                        <p className="aksara-mono text-[0.55rem] text-maroon-soft">
                           {course.code}
                         </p>
-                        <h3 className="mt-4 text-[1.05rem] font-semibold leading-6 text-[#2f1f26]">
+                        <h3 className="mt-4 text-[1.05rem] font-semibold leading-6 text-ink">
                           {course.title}
                         </h3>
-                        <p className="mt-4 text-sm text-[#88737d]">
+                        <p className="mt-4 text-sm text-ink-soft">
                           {course.pendingTasks} pending / {course.totalTasks} total
                         </p>
-                        <p className="mt-1 text-sm text-[#9a858e]">
+                        <p className="mt-1 text-sm text-ink-soft">
                           Next due: {course.nextDueLabel}
                         </p>
                       </article>
@@ -1116,7 +1116,7 @@ export default function DashboardPage() {
                           className={`aksara-chip px-5 py-2.5 text-sm font-semibold transition ${
                             taskFilter === button.filter
                               ? "aksara-chip-active"
-                              : "hover:border-[#d8b7c0] hover:bg-white"
+                              : "hover:border-line hover:bg-surface"
                           }`}
                         >
                           {button.label}
@@ -1126,7 +1126,7 @@ export default function DashboardPage() {
                   </div>
 
                   <div className="mt-6">
-                    <div className="grid grid-cols-[minmax(0,2.3fr)_1.2fr_1fr_1fr_1fr_min-content] gap-6 px-2 pb-4 text-[0.68rem] font-semibold uppercase tracking-[0.26em] text-[#9b8790]">
+                    <div className="grid grid-cols-[minmax(0,2.3fr)_1.2fr_1fr_1fr_1fr_min-content] gap-6 px-2 pb-4 text-[0.68rem] font-semibold uppercase tracking-[0.26em] text-ink-soft">
                       <span>Title</span>
                       <span>Course</span>
                       <span>Type</span>
@@ -1140,13 +1140,13 @@ export default function DashboardPage() {
                         filteredTasks.map((task) => (
                           <div
                             key={`${task.title}-${task.dueDateIso}`}
-                            className="grid grid-cols-[minmax(0,2.3fr)_1.2fr_1fr_1fr_1fr_min-content] gap-6 rounded-[1.5rem] px-2 py-5 transition hover:bg-white/45"
+                            className="grid grid-cols-[minmax(0,2.3fr)_1.2fr_1fr_1fr_1fr_min-content] gap-6 rounded-[1.5rem] px-2 py-5 transition hover:bg-surface/45"
                           >
                             <div>
-                              <h3 className="text-[1.45rem] font-semibold leading-8 text-[#2c1d24]">
+                              <h3 className="text-[1.45rem] font-semibold leading-8 text-ink">
                                 {task.title}
                               </h3>
-                              <p className="mt-1 text-base text-[#8a747e]">
+                              <p className="mt-1 text-base text-ink-soft">
                                 {task.courseTitle}
                               </p>
                             </div>
@@ -1159,13 +1159,13 @@ export default function DashboardPage() {
                                 }
                               />
                             </div>
-                            <p className="pt-2 text-lg text-[#6b5861]">{task.type}</p>
+                            <p className="pt-2 text-lg text-ink-body">{task.type}</p>
                             <div className="pt-2">
-                              <p className="text-lg font-semibold text-[#7d656f]">
+                              <p className="text-lg font-semibold text-ink-body">
                                 {formatFullDate(task.dueDateIso)}
                               </p>
                               {task.dueTime ? (
-                                <p className="mt-1 text-sm font-semibold text-[#a14a6a]">
+                                <p className="mt-1 text-sm font-semibold text-maroon-soft">
                                   {task.dueTime}
                                 </p>
                               ) : null}
@@ -1182,7 +1182,7 @@ export default function DashboardPage() {
                                   setTaskToEdit(task);
                                   setIsModalOpen(true);
                                 }}
-                                className="text-[#9b8790] hover:text-maroon transition-colors p-1"
+                                className="text-ink-soft hover:text-maroon transition-colors p-1"
                                 title="Edit Task"
                                 aria-label="Edit task"
                               >
@@ -1195,7 +1195,7 @@ export default function DashboardPage() {
                                 className={`flex size-[1.35rem] items-center justify-center rounded-[0.4rem] border-[2.5px] transition-colors ${
                                   task.completed 
                                     ? "border-maroon bg-maroon text-white" 
-                                    : "border-[#dcc9cf] bg-white hover:border-maroon"
+                                    : "border-line bg-surface hover:border-maroon"
                                 }`}
                               >
                                 {task.completed && (
@@ -1208,7 +1208,7 @@ export default function DashboardPage() {
                           </div>
                         ))
                       ) : (
-                        <div className="px-2 py-6 text-lg text-[#7d6872]">
+                        <div className="px-2 py-6 text-lg text-ink-soft">
                           No tasks match this filter.
                         </div>
                       )}
@@ -1262,7 +1262,7 @@ export default function DashboardPage() {
                               <p className="text-[2rem] font-semibold leading-none text-maroon-bright">
                                 {taskDate.getDate()}
                               </p>
-                              <p className="aksara-mono mt-2 text-[0.56rem] text-[#9f8b93]">
+                              <p className="aksara-mono mt-2 text-[0.56rem] text-ink-soft">
                                 {formatWeekdayShort(taskDate)}
                               </p>
                             </div>
@@ -1287,18 +1287,18 @@ export default function DashboardPage() {
                                     }
                                   />
                                   <div className="text-right">
-                                    <p className="text-sm font-semibold leading-5 text-[#7d656f]">
+                                    <p className="text-sm font-semibold leading-5 text-ink-body">
                                       {formatFullDate(task.dueDateIso)}
                                     </p>
-                                    <p className="text-sm font-semibold leading-5 text-[#a14a6a]">
+                                    <p className="text-sm font-semibold leading-5 text-maroon-soft">
                                       {task.dueTime || task.type}
                                     </p>
                                   </div>
                                 </div>
-                                <h4 className="mt-4 text-[1.32rem] font-semibold leading-7 text-[#2c1d24]">
+                                <h4 className="mt-4 text-[1.32rem] font-semibold leading-7 text-ink">
                                   {task.title}
                                 </h4>
-                                <div className="mt-3 grid grid-cols-[minmax(0,1fr)_4.8rem] gap-3 text-sm text-[#86717b]">
+                                <div className="mt-3 grid grid-cols-[minmax(0,1fr)_4.8rem] gap-3 text-sm text-ink-soft">
                                   <span className="min-w-0 leading-5">
                                     {task.courseTitle}
                                   </span>
@@ -1312,7 +1312,7 @@ export default function DashboardPage() {
                         );
                       })
                     ) : (
-                      <p className="text-base text-[#7d6872]">
+                      <p className="text-base text-ink-soft">
                         No upcoming tasks found.
                       </p>
                     )}
@@ -1357,7 +1357,7 @@ export default function DashboardPage() {
                       {upcomingTasks.map((task) => (
                         <article
                           key={`${task.title}-${task.dueDateIso}`}
-                          className="rounded-[1.3rem] border border-[#ecd9de] bg-white/45 p-4"
+                          className="rounded-[1.3rem] border border-line bg-surface/45 p-4"
                         >
                           <div className="flex items-center justify-between gap-3">
                             <CoursePill
@@ -1371,10 +1371,10 @@ export default function DashboardPage() {
                               {formatRelativeLabel(task, currentTime)}
                             </span>
                           </div>
-                          <h3 className="mt-3 text-lg font-semibold leading-6 text-[#2c1d24]">
+                          <h3 className="mt-3 text-lg font-semibold leading-6 text-ink">
                             {task.title}
                           </h3>
-                          <p className="mt-2 text-sm text-[#86717b]">
+                          <p className="mt-2 text-sm text-ink-soft">
                             {formatDueDateTime(task)}
                           </p>
                         </article>
@@ -1407,7 +1407,7 @@ export default function DashboardPage() {
                           className={`aksara-chip px-5 py-2.5 text-sm font-semibold transition ${
                             taskFilter === button.filter
                               ? "aksara-chip-active"
-                              : "hover:border-[#d8b7c0] hover:bg-white"
+                              : "hover:border-line hover:bg-surface"
                           }`}
                         >
                           {button.label}
@@ -1417,7 +1417,7 @@ export default function DashboardPage() {
                   </div>
 
                   <div className="mt-8">
-                    <div className="grid grid-cols-[minmax(0,2.3fr)_1.2fr_1fr_1fr_1fr_min-content] gap-6 px-2 pb-4 text-[0.68rem] font-semibold uppercase tracking-[0.26em] text-[#9b8790]">
+                    <div className="grid grid-cols-[minmax(0,2.3fr)_1.2fr_1fr_1fr_1fr_min-content] gap-6 px-2 pb-4 text-[0.68rem] font-semibold uppercase tracking-[0.26em] text-ink-soft">
                       <span>Title</span>
                       <span>Course</span>
                       <span>Type</span>
@@ -1431,13 +1431,13 @@ export default function DashboardPage() {
                         filteredTasks.map((task) => (
                           <div
                             key={`${task.title}-${task.dueDateIso}`}
-                            className="grid grid-cols-[minmax(0,2.3fr)_1.2fr_1fr_1fr_1fr_min-content] gap-6 rounded-[1.5rem] px-2 py-5 transition hover:bg-white/45"
+                            className="grid grid-cols-[minmax(0,2.3fr)_1.2fr_1fr_1fr_1fr_min-content] gap-6 rounded-[1.5rem] px-2 py-5 transition hover:bg-surface/45"
                           >
                             <div>
-                              <h3 className="text-[1.45rem] font-semibold leading-8 text-[#2c1d24]">
+                              <h3 className="text-[1.45rem] font-semibold leading-8 text-ink">
                                 {task.title}
                               </h3>
-                              <p className="mt-1 text-base text-[#8a747e]">
+                              <p className="mt-1 text-base text-ink-soft">
                                 {task.courseTitle}
                               </p>
                             </div>
@@ -1450,13 +1450,13 @@ export default function DashboardPage() {
                                 }
                               />
                             </div>
-                            <p className="pt-2 text-lg text-[#6b5861]">{task.type}</p>
+                            <p className="pt-2 text-lg text-ink-body">{task.type}</p>
                             <div className="pt-2">
-                              <p className="text-lg font-semibold text-[#7d656f]">
+                              <p className="text-lg font-semibold text-ink-body">
                                 {formatFullDate(task.dueDateIso)}
                               </p>
                               {task.dueTime ? (
-                                <p className="mt-1 text-sm font-semibold text-[#a14a6a]">
+                                <p className="mt-1 text-sm font-semibold text-maroon-soft">
                                   {task.dueTime}
                                 </p>
                               ) : null}
@@ -1473,7 +1473,7 @@ export default function DashboardPage() {
                                   setTaskToEdit(task);
                                   setIsModalOpen(true);
                                 }}
-                                className="text-[#9b8790] hover:text-maroon transition-colors p-1"
+                                className="text-ink-soft hover:text-maroon transition-colors p-1"
                                 title="Edit Task"
                                 aria-label="Edit task"
                               >
@@ -1486,7 +1486,7 @@ export default function DashboardPage() {
                                 className={`flex size-[1.35rem] items-center justify-center rounded-[0.4rem] border-[2.5px] transition-colors ${
                                   task.completed 
                                     ? "border-maroon bg-maroon text-white" 
-                                    : "border-[#dcc9cf] bg-white hover:border-maroon"
+                                    : "border-line bg-surface hover:border-maroon"
                                 }`}
                               >
                                 {task.completed && (
@@ -1499,7 +1499,7 @@ export default function DashboardPage() {
                           </div>
                         ))
                       ) : (
-                        <div className="px-2 py-6 text-lg text-[#7d6872]">
+                        <div className="px-2 py-6 text-lg text-ink-soft">
                           No tasks match this filter.
                         </div>
                       )}
@@ -1533,18 +1533,18 @@ export default function DashboardPage() {
                     {courseCards.map((course) => (
                       <article
                         key={course.code}
-                        className={`rounded-[1.55rem] border border-[#ecd9de] ${course.tint} p-5 shadow-[0_10px_20px_rgba(131,16,62,0.04)]`}
+                        className={`rounded-[1.55rem] border border-line ${course.tint} p-5 shadow-[0_10px_20px_rgba(131,16,62,0.04)]`}
                       >
-                        <p className="aksara-mono text-[0.56rem] text-[#a94f6d]">
+                        <p className="aksara-mono text-[0.56rem] text-maroon-soft">
                           {course.code}
                         </p>
-                        <h2 className="mt-4 text-[1.35rem] font-semibold leading-7 text-[#2f1f26]">
+                        <h2 className="mt-4 text-[1.35rem] font-semibold leading-7 text-ink">
                           {course.title}
                         </h2>
-                        <p className="mt-4 text-base text-[#88737d]">
+                        <p className="mt-4 text-base text-ink-soft">
                           {course.pendingTasks} pending / {course.totalTasks} total
                         </p>
-                        <p className="mt-2 text-sm font-semibold text-[#9a5570]">
+                        <p className="mt-2 text-sm font-semibold text-maroon-soft">
                           Next due: {course.nextDueLabel}
                         </p>
                       </article>
@@ -1579,15 +1579,15 @@ export default function DashboardPage() {
                   <p className="aksara-mono text-[0.58rem] text-maroon-soft">
                     Next deadline
                   </p>
-                  <p className="aksara-mono text-[0.58rem] text-[#9f8b93]">
+                  <p className="aksara-mono text-[0.58rem] text-ink-soft">
                     {nextTask ? formatDueDateTime(nextTask) : "No due date"}
                   </p>
                 </div>
                 <div className="mt-4">
-                  <p className="text-[1.2rem] font-semibold leading-7 text-[#2c1d24]">
+                  <p className="text-[1.2rem] font-semibold leading-7 text-ink">
                     {nextTask ? nextTask.title : "No pending tasks"}
                   </p>
-                  <p className="mt-2 text-base text-[#7d6872]">
+                  <p className="mt-2 text-base text-ink-soft">
                     {nextTask
                       ? `${nextTask.courseCode} / ${nextTask.type}`
                       : "Your workspace currently has no active schedule items."}
@@ -1604,7 +1604,7 @@ export default function DashboardPage() {
                     }}
                   />
                 </div>
-                <div className="mt-4 flex items-center justify-between text-sm text-[#917b84]">
+                <div className="mt-4 flex items-center justify-between text-sm text-ink-soft">
                   <span>{summary.pending} pending</span>
                   <span>
                     {nextTask ? formatRelativeLabel(nextTask, currentTime) : "All clear"}
@@ -1617,38 +1617,38 @@ export default function DashboardPage() {
                   <p className="aksara-mono text-[0.58rem] text-maroon-soft">
                     Workspace summary
                   </p>
-                  <p className="text-sm text-[#8d7880]">{summary.total} total</p>
+                  <p className="text-sm text-ink-soft">{summary.total} total</p>
                 </div>
                 <div className="mt-5 grid grid-cols-4 gap-3 text-center">
                   <div>
                     <p className="text-[2.15rem] font-semibold text-maroon-bright">
                       {summary.urgent}
                     </p>
-                    <p className="aksara-mono mt-1 text-[0.5rem] text-[#99848d]">
+                    <p className="aksara-mono mt-1 text-[0.5rem] text-ink-soft">
                       Urgent
                     </p>
                   </div>
                   <div>
-                    <p className="text-[2.15rem] font-semibold text-[#d29f31]">
+                    <p className="text-[2.15rem] font-semibold text-gold">
                       {summary.dueSoon}
                     </p>
-                    <p className="aksara-mono mt-1 text-[0.5rem] text-[#99848d]">
+                    <p className="aksara-mono mt-1 text-[0.5rem] text-ink-soft">
                       Due Soon
                     </p>
                   </div>
                   <div>
-                    <p className="text-[2.15rem] font-semibold text-[#b85d7f]">
+                    <p className="text-[2.15rem] font-semibold text-maroon-soft">
                       {summary.upcoming}
                     </p>
-                    <p className="aksara-mono mt-1 text-[0.5rem] text-[#99848d]">
+                    <p className="aksara-mono mt-1 text-[0.5rem] text-ink-soft">
                       Upcoming
                     </p>
                   </div>
                   <div>
-                    <p className="text-[2.15rem] font-semibold text-[#7a2347]">
+                    <p className="text-[2.15rem] font-semibold text-maroon-bright">
                       {summary.group}
                     </p>
-                    <p className="aksara-mono mt-1 text-[0.5rem] text-[#99848d]">
+                    <p className="aksara-mono mt-1 text-[0.5rem] text-ink-soft">
                       Group
                     </p>
                   </div>
@@ -1698,7 +1698,7 @@ export default function DashboardPage() {
                     />
                   ))
                 ) : (
-                  <article className="aksara-card rounded-[1.8rem] px-5 py-5 text-[#7d6872]">
+                  <article className="aksara-card rounded-[1.8rem] px-5 py-5 text-ink-soft">
                     Nothing is due today.
                   </article>
                 )}
@@ -1751,23 +1751,23 @@ export default function DashboardPage() {
                     <p className="text-[2.15rem] font-semibold text-maroon-bright">
                       {summary.pending}
                     </p>
-                    <p className="aksara-mono mt-1 text-[0.5rem] text-[#99848d]">
+                    <p className="aksara-mono mt-1 text-[0.5rem] text-ink-soft">
                       Pending
                     </p>
                   </div>
                   <div>
-                    <p className="text-[2.15rem] font-semibold text-[#d29f31]">
+                    <p className="text-[2.15rem] font-semibold text-gold">
                       {summary.completed}
                     </p>
-                    <p className="aksara-mono mt-1 text-[0.5rem] text-[#99848d]">
+                    <p className="aksara-mono mt-1 text-[0.5rem] text-ink-soft">
                       Done
                     </p>
                   </div>
                   <div>
-                    <p className="text-[2.15rem] font-semibold text-[#b85d7f]">
+                    <p className="text-[2.15rem] font-semibold text-maroon-soft">
                       {summary.group}
                     </p>
-                    <p className="aksara-mono mt-1 text-[0.5rem] text-[#99848d]">
+                    <p className="aksara-mono mt-1 text-[0.5rem] text-ink-soft">
                       Group
                     </p>
                   </div>
@@ -1783,7 +1783,7 @@ export default function DashboardPage() {
                     className={`aksara-chip px-5 py-2.5 text-sm font-semibold transition ${
                       taskFilter === button.filter
                         ? "aksara-chip-active"
-                        : "hover:border-[#d8b7c0] hover:bg-white"
+                        : "hover:border-line hover:bg-surface"
                     }`}
                   >
                     {button.label}
@@ -1803,7 +1803,7 @@ export default function DashboardPage() {
                     />
                   ))
                 ) : (
-                  <article className="aksara-card rounded-[1.8rem] px-5 py-5 text-[#7d6872]">
+                  <article className="aksara-card rounded-[1.8rem] px-5 py-5 text-ink-soft">
                     No tasks match this filter.
                   </article>
                 )}
@@ -1837,24 +1837,24 @@ export default function DashboardPage() {
                   <p className="aksara-mono text-[0.58rem] text-maroon-soft">
                     Enrolled
                   </p>
-                  <p className="text-sm text-[#8d7880]">{courseCards.length} courses</p>
+                  <p className="text-sm text-ink-soft">{courseCards.length} courses</p>
                 </div>
                 <div className="mt-4 grid grid-cols-2 gap-4">
                   {courseCards.map((course) => (
                     <article
                       key={course.code}
-                      className={`rounded-[1.4rem] border border-[#ecd9de] ${course.tint} p-4`}
+                      className={`rounded-[1.4rem] border border-line ${course.tint} p-4`}
                     >
-                      <p className="aksara-mono text-[0.52rem] text-[#a94f6d]">
+                      <p className="aksara-mono text-[0.52rem] text-maroon-soft">
                         {course.code}
                       </p>
-                      <h2 className="mt-3 text-base font-semibold leading-5 text-[#2d1d24] line-clamp-2 break-words">
+                      <h2 className="mt-3 text-base font-semibold leading-5 text-ink line-clamp-2 break-words">
                         {course.title}
                       </h2>
-                      <p className="mt-3 text-sm text-[#8a747e]">
+                      <p className="mt-3 text-sm text-ink-soft">
                         {course.pendingTasks} pending / {course.totalTasks} total
                       </p>
-                      <p className="mt-1 text-sm text-[#9a858e]">
+                      <p className="mt-1 text-sm text-ink-soft">
                         Next due: {course.nextDueLabel}
                       </p>
                     </article>
@@ -1896,7 +1896,7 @@ export default function DashboardPage() {
                     type="button"
                     onClick={() => handleDesktopNavigation(item.key)}
                     className={`flex flex-col items-center gap-1 rounded-[0.85rem] px-0.5 py-2 text-[9px] font-semibold tracking-tight ${
-                      active ? "text-maroon-bright" : "text-[#96838c]"
+                      active ? "text-maroon-bright" : "text-ink-soft"
                     }`}
                   >
                     <Icon className="size-[1.1rem]" />

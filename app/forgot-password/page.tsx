@@ -7,7 +7,7 @@ export default function ForgotPasswordPage() {
       <div className="mx-auto max-w-3xl">
         <Link
           href="/"
-          className="inline-flex items-center gap-2 rounded-full border border-[#e7d7dc] bg-white/80 px-4 py-2 text-sm font-semibold text-[#7a2347] shadow-[0_10px_24px_rgba(131,16,62,0.06)] transition hover:border-[#d8b5c1] hover:text-[#5f1737]"
+          className="inline-flex items-center gap-2 rounded-full border border-line bg-surface/80 px-4 py-2 text-sm font-semibold text-maroon-bright shadow-[0_10px_24px_rgba(131,16,62,0.06)] transition hover:border-line hover:text-maroon-deep"
         >
           <ArrowLeft className="size-4" />
           Back to sign in
@@ -22,7 +22,7 @@ export default function ForgotPasswordPage() {
             <br />
             <span className="italic text-maroon-bright">the administrator.</span>
           </h1>
-          <p className="mx-auto mt-5 max-w-xl text-lg leading-8 text-[#6c5962]">
+          <p className="mx-auto mt-5 max-w-xl text-lg leading-8 text-ink-body">
             If you cannot access your account or need your password reset,
             please contact the administrator for assistance.
           </p>

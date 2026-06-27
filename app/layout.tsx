@@ -60,9 +60,15 @@ export default function RootLayout({
   return (
     <html
       lang="en"
+      suppressHydrationWarning
       className={`${displaySerif.variable} ${bodySans.variable} ${uiMono.variable} h-full`}
     >
       <body className="min-h-full">
+        <script
+          dangerouslySetInnerHTML={{
+            __html: `(function(){try{var t=localStorage.getItem('aksara-theme');var d=t?t==='dark':window.matchMedia('(prefers-color-scheme: dark)').matches;if(d)document.documentElement.classList.add('dark');}catch(e){}})();`,
+          }}
+        />
         {children}
         <PwaRegister />
       </body>

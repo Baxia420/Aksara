@@ -33,7 +33,7 @@ function BrandMark() {
         <p className="aksara-serif text-[2rem] font-semibold leading-none text-maroon">
           Aksara
         </p>
-        <p className="aksara-mono mt-1 text-[0.58rem] text-[#b07a88]">
+        <p className="aksara-mono mt-1 text-[0.58rem] text-maroon-soft">
           Academic OS
         </p>
       </div>
@@ -137,7 +137,7 @@ function LoginForm({
       {mobile ? null : (
         <div className="flex items-center justify-between gap-4">
           <p className="aksara-mono text-[0.62rem] text-maroon-soft">{isSignUp ? "Sign Up" : "Sign In"}</p>
-          <div className="rounded-full border border-[#ecd9dd] bg-white px-4 py-2 text-[0.62rem] font-semibold uppercase tracking-[0.28em] text-[#9a7d86]">
+          <div className="rounded-full border border-line bg-surface px-4 py-2 text-[0.62rem] font-semibold uppercase tracking-[0.28em] text-ink-soft">
             Secure
           </div>
         </div>
@@ -145,7 +145,7 @@ function LoginForm({
 
       {!mobile ? (
         <div className="mt-6">
-          <h2 className="aksara-serif text-[3.2rem] leading-[0.85] text-[#2a1820] sm:text-[4rem]">
+          <h2 className="aksara-serif text-[3.2rem] leading-[0.85] text-ink sm:text-[4rem]">
             {isSignUp ? (
               <>
                 Create
@@ -171,7 +171,7 @@ function LoginForm({
           <div className="grid grid-cols-2 gap-4">
             <label className="block">
               <span
-                className={`aksara-mono mb-2 block text-[#91727d] ${
+                className={`aksara-mono mb-2 block text-ink-soft ${
                   mobile ? "text-[0.55rem]" : "text-[0.62rem]"
                 }`}
               >
@@ -183,14 +183,14 @@ function LoginForm({
                 value={firstName}
                 onChange={(event) => setFirstName(event.target.value)}
                 placeholder="Jobayer"
-                className={`w-full rounded-[1.15rem] border border-[#efdde1] bg-white font-semibold text-[#433139] outline-none transition focus:border-[#d6a534] ${
+                className={`w-full rounded-[1.15rem] border border-line bg-surface font-semibold text-ink-body outline-none transition focus:border-gold ${
                   mobile ? "px-4 py-3.5 text-base" : "px-5 py-4 text-lg"
                 }`}
               />
             </label>
             <label className="block">
               <span
-                className={`aksara-mono mb-2 block text-[#91727d] ${
+                className={`aksara-mono mb-2 block text-ink-soft ${
                   mobile ? "text-[0.55rem]" : "text-[0.62rem]"
                 }`}
               >
@@ -202,7 +202,7 @@ function LoginForm({
                 value={lastName}
                 onChange={(event) => setLastName(event.target.value)}
                 placeholder="Alam"
-                className={`w-full rounded-[1.15rem] border border-[#efdde1] bg-white font-semibold text-[#433139] outline-none transition focus:border-[#d6a534] ${
+                className={`w-full rounded-[1.15rem] border border-line bg-surface font-semibold text-ink-body outline-none transition focus:border-gold ${
                   mobile ? "px-4 py-3.5 text-base" : "px-5 py-4 text-lg"
                 }`}
               />
@@ -212,7 +212,7 @@ function LoginForm({
 
         <label className="block">
           <span
-            className={`aksara-mono mb-2 block text-[#91727d] ${
+            className={`aksara-mono mb-2 block text-ink-soft ${
               mobile ? "text-[0.55rem]" : "text-[0.62rem]"
             }`}
           >
@@ -226,7 +226,7 @@ function LoginForm({
             type="text"
             value={username}
             placeholder="name@graduate.utm.my"
-            className={`w-full rounded-[1.15rem] border border-[#efdde1] bg-white font-semibold text-[#433139] outline-none transition focus:border-[#d6a534] ${
+            className={`w-full rounded-[1.15rem] border border-line bg-surface font-semibold text-ink-body outline-none transition focus:border-gold ${
               mobile ? "px-5 py-3.5 text-base" : "px-5 py-4 text-lg"
             }`}
           />
@@ -235,7 +235,7 @@ function LoginForm({
         <label className="block">
           <div className="mb-2 flex items-center justify-between gap-4">
             <span
-              className={`aksara-mono block text-[#91727d] ${
+              className={`aksara-mono block text-ink-soft ${
                 mobile ? "text-[0.55rem]" : "text-[0.62rem]"
               }`}
             >
@@ -262,7 +262,7 @@ function LoginForm({
             type="password"
             value={password}
             placeholder="Password"
-            className={`w-full rounded-[1.15rem] border border-[#efdde1] bg-white font-semibold text-[#433139] outline-none transition focus:border-[#d6a534] ${
+            className={`w-full rounded-[1.15rem] border border-line bg-surface font-semibold text-ink-body outline-none transition focus:border-gold ${
               mobile ? "px-5 py-3.5 text-base" : "px-5 py-4 text-lg"
             }`}
           />
@@ -275,7 +275,7 @@ function LoginForm({
         ) : null}
 
         {successMessage ? (
-          <div className="p-4 rounded-[1rem] bg-[#fbf4f6] border border-[#eedfe3] text-sm font-semibold text-maroon-bright leading-relaxed">
+          <div className="p-4 rounded-[1rem] bg-surface-soft border border-[#eedfe3] text-sm font-semibold text-maroon-bright leading-relaxed">
             {successMessage}
           </div>
         ) : null}
@@ -284,7 +284,7 @@ function LoginForm({
           <button
             disabled={isSubmitting}
             type="submit"
-            className={`aksara-primary-button flex items-center justify-center gap-3 rounded-[1rem] font-semibold text-[#fff6f8] transition disabled:cursor-not-allowed disabled:opacity-70 ${
+            className={`aksara-primary-button flex items-center justify-center gap-3 rounded-[1rem] font-semibold text-white transition disabled:cursor-not-allowed disabled:opacity-70 ${
               mobile ? "px-5 py-3.5 text-base" : "px-5 py-4 text-lg"
             }`}
           >
@@ -315,7 +315,7 @@ function LoginForm({
       </div>
 
       {!mobile ? (
-        <p className="mt-8 text-center text-sm leading-6 text-[#826c75]">
+        <p className="mt-8 text-center text-sm leading-6 text-ink-soft">
           Protected academic environment. By signing in you agree to the
           <Link
             href="/acceptable-use-policy"
@@ -344,7 +344,7 @@ export default function Home() {
   return (
     <main className="min-h-screen px-4 py-4 lg:px-8 lg:py-7">
       <div className="mx-auto hidden min-h-[calc(100vh-2rem)] max-w-[95rem] flex-col lg:flex">
-        <header className="flex items-center justify-between text-[0.95rem] text-[#725d67]">
+        <header className="flex items-center justify-between text-[0.95rem] text-ink-soft">
           <BrandMark />
           <div className="flex items-center gap-8">
             <p className="aksara-mono text-[0.72rem] text-ink-soft">
@@ -357,10 +357,10 @@ export default function Home() {
         <div className="mt-10 grid flex-1 grid-cols-[1.02fr_0.98fr] gap-14">
           <section className="flex flex-col justify-between pb-5">
             <div>
-              <p className="aksara-mono text-[0.7rem] text-[#a14a6a]">
+              <p className="aksara-mono text-[0.7rem] text-maroon-soft">
                 Aksara / Academic Operating System
               </p>
-              <h1 className="aksara-serif mt-8 max-w-[46rem] text-[6.8rem] leading-[0.87] tracking-[-0.03em] text-[#24161d]">
+              <h1 className="aksara-serif mt-8 max-w-[46rem] text-[6.8rem] leading-[0.87] tracking-[-0.03em] text-ink">
                 A quiet place to
                 <br />
                 <span className="italic text-maroon-bright">think,</span>
@@ -369,7 +369,7 @@ export default function Home() {
                 <br />
                 <span className="italic text-maroon-bright">finish.</span>
               </h1>
-              <p className="mt-6 max-w-[37rem] text-[1.55rem] leading-10 text-[#65535c]">
+              <p className="mt-6 max-w-[37rem] text-[1.55rem] leading-10 text-ink-body">
                 Your private academic command center. Assignments, tutorials,
                 group sprints, and exam dates gathered into one calm surface.
               </p>
@@ -379,21 +379,21 @@ export default function Home() {
               <div className="mt-10 grid max-w-[43rem] grid-cols-3 gap-4">
                 {loginHighlights.map((item) => (
                   <article key={item.label} className="aksara-soft-card p-6">
-                    <p className="aksara-mono text-[0.56rem] text-[#d6a534]">
+                    <p className="aksara-mono text-[0.56rem] text-gold">
                       {item.label}
                     </p>
-                    <h2 className="aksara-serif mt-4 text-[2rem] leading-none text-[#2b1b22]">
+                    <h2 className="aksara-serif mt-4 text-[2rem] leading-none text-ink">
                       {item.title}
                     </h2>
-                    <p className="mt-3 text-[1.05rem] leading-7 text-[#66525b]">
+                    <p className="mt-3 text-[1.05rem] leading-7 text-ink-body">
                       {item.copy}
                     </p>
                   </article>
                 ))}
               </div>
 
-              <div className="mt-10 pr-10 text-[#8d7880]">
-                <p className="text-sm font-medium tracking-[0.04em] text-[#7d6872]">
+              <div className="mt-10 pr-10 text-ink-soft">
+                <p className="text-sm font-medium tracking-[0.04em] text-ink-soft">
                   Copyright 2026 Jobayer Alam. All rights reserved.
                 </p>
               </div>
@@ -413,10 +413,10 @@ export default function Home() {
         </header>
 
         <div className="mt-10">
-          <p className="aksara-mono text-[0.7rem] text-[#a14a6a]">
+          <p className="aksara-mono text-[0.7rem] text-maroon-soft">
             {isSignUp ? "Sign Up" : "Sign In"}
           </p>
-          <h1 className="aksara-serif mt-4 text-[4.2rem] leading-[0.84] tracking-[-0.04em] text-[#24161d]">
+          <h1 className="aksara-serif mt-4 text-[4.2rem] leading-[0.84] tracking-[-0.04em] text-ink">
             {isSignUp ? (
               <>
                 Create
@@ -431,7 +431,7 @@ export default function Home() {
               </>
             )}
           </h1>
-          <p className="mt-4 max-w-[15rem] text-[1.4rem] leading-8 text-[#615058]">
+          <p className="mt-4 max-w-[15rem] text-[1.4rem] leading-8 text-ink-body">
             {isSignUp
               ? "Set up your private planner in seconds"
               : "Your assignments are waiting for you"}
@@ -443,7 +443,7 @@ export default function Home() {
         </div>
 
         <footer className="mt-auto px-2 pb-8 pt-8 text-center">
-          <p className="text-[0.88rem] font-medium tracking-[0.04em] text-[#7d6872]">
+          <p className="text-[0.88rem] font-medium tracking-[0.04em] text-ink-soft">
             Copyright 2026 Jobayer Alam. All rights reserved.
           </p>
         </footer>

@@ -6,6 +6,7 @@ import { use, useState } from "react";
 import { ArrowLeft, Bell, GraduationCap } from "lucide-react";
 import { updateProfile, updateReminderPreferences } from "@/app/actions";
 import { useDashboardDataPromise } from "@/components/dashboard/DashboardDataProvider";
+import { ThemeToggle } from "@/components/ThemeToggle";
 import { REMINDER_LEAD_TIME_OPTIONS } from "@/lib/types";
 
 export default function SettingsPage() {
@@ -69,7 +70,7 @@ export default function SettingsPage() {
       <header className="flex items-center justify-between gap-4">
         <Link
           href="/dashboard"
-          className="inline-flex items-center gap-2 rounded-full border border-[#e7d7dc] bg-white/80 px-4 py-2 text-sm font-semibold text-maroon-deep shadow-[0_10px_24px_rgba(131,16,62,0.06)] transition hover:border-[#d8b5c1]"
+          className="inline-flex items-center gap-2 rounded-full border border-line bg-surface/80 px-4 py-2 text-sm font-semibold text-maroon-deep shadow-[0_10px_24px_rgba(131,16,62,0.06)] transition hover:border-line"
         >
           <ArrowLeft className="size-4" />
           Back
@@ -88,8 +89,17 @@ export default function SettingsPage() {
         Manage your profile and how Aksara reminds you.
       </p>
 
+      {/* Appearance */}
+      <section className="aksara-card mt-8 flex flex-wrap items-center justify-between gap-4 p-7">
+        <div>
+          <h2 className="text-xl font-bold text-ink">Appearance</h2>
+          <p className="text-sm text-ink-muted">Choose your theme.</p>
+        </div>
+        <ThemeToggle />
+      </section>
+
       {/* Reminders */}
-      <section className="aksara-card mt-8 p-7">
+      <section className="aksara-card mt-6 p-7">
         <div className="flex items-start justify-between gap-4">
           <div className="flex items-center gap-3">
             <div className="flex size-10 items-center justify-center rounded-xl bg-maroon/10 text-maroon">
@@ -109,11 +119,11 @@ export default function SettingsPage() {
             aria-label="Enable reminders"
             onClick={() => setRemindersEnabled((v) => !v)}
             className={`relative h-7 w-12 shrink-0 rounded-full transition-colors ${
-              remindersEnabled ? "bg-maroon" : "bg-[#dcc9cf]"
+              remindersEnabled ? "bg-maroon" : "bg-line"
             }`}
           >
             <span
-              className={`absolute top-1 size-5 rounded-full bg-white shadow transition-all ${
+              className={`absolute top-1 size-5 rounded-full bg-surface shadow transition-all ${
                 remindersEnabled ? "left-6" : "left-1"
               }`}
             />
@@ -136,7 +146,7 @@ export default function SettingsPage() {
                 className={`rounded-[1rem] border px-4 py-3 text-sm font-semibold transition ${
                   active
                     ? "border-maroon bg-maroon text-white shadow-[0_10px_24px_rgba(131,16,62,0.18)]"
-                    : "border-[#ecd9de] bg-white text-ink-muted hover:border-[#d8b7c0]"
+                    : "border-line bg-surface text-ink-muted hover:border-line"
                 }`}
               >
                 {opt.label}
@@ -172,7 +182,7 @@ export default function SettingsPage() {
             <input
               disabled
               value={profile?.email ?? ""}
-              className="w-full cursor-not-allowed rounded-[0.85rem] border border-[#ecd9de] bg-[#fdfaf7] px-4 py-3 text-[#9a848d]"
+              className="w-full cursor-not-allowed rounded-[0.85rem] border border-line bg-surface-soft px-4 py-3 text-ink-soft"
             />
           </div>
           <div className="grid grid-cols-2 gap-4">
@@ -185,7 +195,7 @@ export default function SettingsPage() {
                 name="firstName"
                 value={firstName}
                 onChange={(e) => setFirstName(e.target.value)}
-                className="w-full rounded-[0.85rem] border border-[#ecd9de] px-4 py-3 outline-none focus:border-maroon-bright"
+                className="w-full rounded-[0.85rem] border border-line px-4 py-3 outline-none focus:border-maroon-bright"
               />
             </div>
             <div>
@@ -197,7 +207,7 @@ export default function SettingsPage() {
                 name="lastName"
                 value={lastName}
                 onChange={(e) => setLastName(e.target.value)}
-                className="w-full rounded-[0.85rem] border border-[#ecd9de] px-4 py-3 outline-none focus:border-maroon-bright"
+                className="w-full rounded-[0.85rem] border border-line px-4 py-3 outline-none focus:border-maroon-bright"
               />
             </div>
           </div>
@@ -211,7 +221,7 @@ export default function SettingsPage() {
               value={password}
               onChange={(e) => setPassword(e.target.value)}
               placeholder="Min 6 characters to change"
-              className="w-full rounded-[0.85rem] border border-[#ecd9de] px-4 py-3 outline-none focus:border-maroon-bright"
+              className="w-full rounded-[0.85rem] border border-line px-4 py-3 outline-none focus:border-maroon-bright"
             />
           </div>
           <div className="flex items-center justify-between gap-4 pt-2">

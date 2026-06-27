@@ -116,7 +116,7 @@ export function AddTaskModal({ isOpen, onClose, tasks = [], courses = [], taskTo
                 name="courseCode" 
                 value={selectedCourse}
                 onChange={(e) => setSelectedCourse(e.target.value)}
-                className="w-full border border-[#ecd9de] rounded-[0.85rem] px-4 py-3 outline-none focus:border-maroon-bright bg-white"
+                className="w-full border border-line rounded-[0.85rem] px-4 py-3 outline-none focus:border-maroon-bright bg-surface"
               >
                 <option value="" disabled>Select a code</option>
                 {uniqueCourses.map(c => (
@@ -127,7 +127,7 @@ export function AddTaskModal({ isOpen, onClose, tasks = [], courses = [], taskTo
             <div>
               <label className="block text-sm font-semibold mb-1 text-ink-soft">Course Title</label>
               <input type="hidden" name="courseTitle" value={uniqueCourses.find(c => c.code === selectedCourse)?.title || ""} />
-              <div className="w-full border border-[#ecd9de] rounded-[0.85rem] px-4 py-3 bg-[#fdfaf7] text-ink-muted truncate">
+              <div className="w-full border border-line rounded-[0.85rem] px-4 py-3 bg-surface-soft text-ink-muted truncate">
                 {uniqueCourses.find((c) => c.code === selectedCourse)?.title || "Select a code first"}
               </div>
             </div>
@@ -140,7 +140,7 @@ export function AddTaskModal({ isOpen, onClose, tasks = [], courses = [], taskTo
               value={title}
               onChange={(e) => setTitle(e.target.value)}
               placeholder="Final Project Phase 1" 
-              className="w-full border border-[#ecd9de] rounded-[0.85rem] px-4 py-3 outline-none focus:border-maroon-bright" 
+              className="w-full border border-line rounded-[0.85rem] px-4 py-3 outline-none focus:border-maroon-bright" 
             />
           </div>
           <div>
@@ -150,7 +150,7 @@ export function AddTaskModal({ isOpen, onClose, tasks = [], courses = [], taskTo
               name="type" 
               value={selectedType}
               onChange={(e) => setSelectedType(e.target.value)}
-              className="w-full border border-[#ecd9de] rounded-[0.85rem] px-4 py-3 outline-none focus:border-maroon-bright bg-white"
+              className="w-full border border-line rounded-[0.85rem] px-4 py-3 outline-none focus:border-maroon-bright bg-surface"
             >
               <option value="" disabled>Select a type</option>
               {uniqueTypes.map(type => (
@@ -167,7 +167,7 @@ export function AddTaskModal({ isOpen, onClose, tasks = [], courses = [], taskTo
                 name="dueDate" 
                 value={dueDate}
                 onChange={(e) => setDueDate(e.target.value)}
-                className="w-full border border-[#ecd9de] rounded-[0.85rem] px-4 py-3 outline-none focus:border-maroon-bright" 
+                className="w-full border border-line rounded-[0.85rem] px-4 py-3 outline-none focus:border-maroon-bright" 
               />
             </div>
             <div>
@@ -178,7 +178,7 @@ export function AddTaskModal({ isOpen, onClose, tasks = [], courses = [], taskTo
                 value={dueTime}
                 onChange={(e) => setDueTime(e.target.value)}
                 placeholder="e.g. 11:59 PM or 23:59" 
-                className="w-full border border-[#ecd9de] rounded-[0.85rem] px-4 py-3 outline-none focus:border-maroon-bright" 
+                className="w-full border border-line rounded-[0.85rem] px-4 py-3 outline-none focus:border-maroon-bright" 
               />
             </div>
           </div>

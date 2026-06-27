@@ -3,7 +3,7 @@
 import Link from "next/link";
 import { useRouter } from "next/navigation";
 import { type FormEvent, useState } from "react";
-import { ArrowRight, TriangleAlert } from "lucide-react";
+import { ArrowRight, GraduationCap } from "lucide-react";
 
 const loginHighlights = [
   {
@@ -26,11 +26,11 @@ const loginHighlights = [
 function BrandMark() {
   return (
     <div className="flex items-center gap-3">
-      <div className="flex size-14 items-center justify-center rounded-2xl bg-[#83103e] text-[#e2a22f] shadow-[0_12px_28px_rgba(131,16,62,0.18)]">
-        <TriangleAlert className="size-6 stroke-[2.2]" />
+      <div className="flex size-14 items-center justify-center rounded-2xl bg-maroon text-gold shadow-[0_12px_28px_rgba(131,16,62,0.18)]">
+        <GraduationCap className="size-6 stroke-[2.2]" />
       </div>
       <div>
-        <p className="aksara-serif text-[2rem] font-semibold leading-none text-[#83103e]">
+        <p className="aksara-serif text-[2rem] font-semibold leading-none text-maroon">
           Aksara
         </p>
         <p className="aksara-mono mt-1 text-[0.58rem] text-[#b07a88]">
@@ -41,9 +41,16 @@ function BrandMark() {
   );
 }
 
-function LoginForm({ mobile = false }: { mobile?: boolean }) {
+function LoginForm({
+  mobile = false,
+  isSignUp,
+  setIsSignUp,
+}: {
+  mobile?: boolean;
+  isSignUp: boolean;
+  setIsSignUp: (value: boolean) => void;
+}) {
   const router = useRouter();
-  const [isSignUp, setIsSignUp] = useState(false);
   const [firstName, setFirstName] = useState("");
   const [lastName, setLastName] = useState("");
   const [username, setUsername] = useState("");
@@ -129,9 +136,9 @@ function LoginForm({ mobile = false }: { mobile?: boolean }) {
     >
       {mobile ? null : (
         <div className="flex items-center justify-between gap-4">
-          <p className="aksara-mono text-[0.62rem] text-[#b34973]">{isSignUp ? "Sign Up" : "Sign In"}</p>
+          <p className="aksara-mono text-[0.62rem] text-maroon-soft">{isSignUp ? "Sign Up" : "Sign In"}</p>
           <div className="rounded-full border border-[#ecd9dd] bg-white px-4 py-2 text-[0.62rem] font-semibold uppercase tracking-[0.28em] text-[#9a7d86]">
-            Secure / Acid
+            Secure
           </div>
         </div>
       )}
@@ -143,13 +150,13 @@ function LoginForm({ mobile = false }: { mobile?: boolean }) {
               <>
                 Create
                 <br />
-                <span className="italic text-[#a31657]">account.</span>
+                <span className="italic text-maroon-bright">account.</span>
               </>
             ) : (
               <>
                 Welcome
                 <br />
-                <span className="italic text-[#a31657]">back.</span>
+                <span className="italic text-maroon-bright">back.</span>
               </>
             )}
           </h2>
@@ -237,7 +244,7 @@ function LoginForm({ mobile = false }: { mobile?: boolean }) {
             {!isSignUp && (
               <Link
                 href="/forgot-password"
-                className={`font-semibold text-[#83103e] transition hover:text-[#57102b] ${
+                className={`font-semibold text-maroon transition hover:text-maroon-deep ${
                   mobile ? "text-[0.92rem]" : "text-sm"
                 }`}
               >
@@ -262,26 +269,15 @@ function LoginForm({ mobile = false }: { mobile?: boolean }) {
         </label>
 
         {error ? (
-          <p id={errorId} className="text-sm font-semibold text-[#a31657]">
+          <p id={errorId} className="text-sm font-semibold text-maroon-bright">
             {error}
           </p>
         ) : null}
 
         {successMessage ? (
-          <div className="p-4 rounded-[1rem] bg-[#fbf4f6] border border-[#eedfe3] text-sm font-semibold text-[#a31657] leading-relaxed">
+          <div className="p-4 rounded-[1rem] bg-[#fbf4f6] border border-[#eedfe3] text-sm font-semibold text-maroon-bright leading-relaxed">
             {successMessage}
           </div>
-        ) : null}
-
-        {!mobile && !isSignUp ? (
-          <label className="flex items-center gap-3 text-base text-[#68555f]">
-            <input
-              type="checkbox"
-              defaultChecked
-              className="size-4 accent-[#83103e]"
-            />
-            <span>Keep me signed in on this device</span>
-          </label>
         ) : null}
 
         <div className={`grid ${mobile ? "pt-1" : "gap-3 pt-1"}`}>
@@ -312,7 +308,7 @@ function LoginForm({ mobile = false }: { mobile?: boolean }) {
             setError(null);
             setSuccessMessage(null);
           }}
-          className="font-semibold text-[#83103e] hover:text-[#57102b] transition text-sm"
+          className="font-semibold text-maroon hover:text-maroon-deep transition text-sm"
         >
           {isSignUp ? "Already have an account? Sign In" : "Don't have an account? Sign Up"}
         </button>
@@ -323,7 +319,7 @@ function LoginForm({ mobile = false }: { mobile?: boolean }) {
           Protected academic environment. By signing in you agree to the
           <Link
             href="/acceptable-use-policy"
-            className="font-semibold text-[#a31657] transition hover:text-[#83103e]"
+            className="font-semibold text-maroon-bright transition hover:text-maroon"
           >
             {" "}
             Acceptable Use Policy
@@ -331,7 +327,7 @@ function LoginForm({ mobile = false }: { mobile?: boolean }) {
           {" "}and{" "}
           <Link
             href="/privacy-notice"
-            className="font-semibold text-[#a31657] transition hover:text-[#83103e]"
+            className="font-semibold text-maroon-bright transition hover:text-maroon"
           >
             Privacy Notice
           </Link>
@@ -343,13 +339,15 @@ function LoginForm({ mobile = false }: { mobile?: boolean }) {
 }
 
 export default function Home() {
+  const [isSignUp, setIsSignUp] = useState(false);
+
   return (
     <main className="min-h-screen px-4 py-4 lg:px-8 lg:py-7">
       <div className="mx-auto hidden min-h-[calc(100vh-2rem)] max-w-[95rem] flex-col lg:flex">
         <header className="flex items-center justify-between text-[0.95rem] text-[#725d67]">
           <BrandMark />
           <div className="flex items-center gap-8">
-            <p className="aksara-mono text-[0.72rem] text-[#8f7881]">
+            <p className="aksara-mono text-[0.72rem] text-ink-soft">
               Sem 2 / 2025/26
             </p>
             <p>Need help?</p>
@@ -365,11 +363,11 @@ export default function Home() {
               <h1 className="aksara-serif mt-8 max-w-[46rem] text-[6.8rem] leading-[0.87] tracking-[-0.03em] text-[#24161d]">
                 A quiet place to
                 <br />
-                <span className="italic text-[#9b174b]">think,</span>
+                <span className="italic text-maroon-bright">think,</span>
                 <br />
                 plan, and
                 <br />
-                <span className="italic text-[#9b174b]">finish.</span>
+                <span className="italic text-maroon-bright">finish.</span>
               </h1>
               <p className="mt-6 max-w-[37rem] text-[1.55rem] leading-10 text-[#65535c]">
                 Your private academic command center. Assignments, tutorials,
@@ -404,7 +402,7 @@ export default function Home() {
 
           <section className="relative flex items-center justify-center px-8">
             <div className="aksara-stage absolute inset-x-6 inset-y-12" />
-            <LoginForm />
+            <LoginForm isSignUp={isSignUp} setIsSignUp={setIsSignUp} />
           </section>
         </div>
       </div>
@@ -415,19 +413,33 @@ export default function Home() {
         </header>
 
         <div className="mt-10">
-          <p className="aksara-mono text-[0.7rem] text-[#a14a6a]">Sign In</p>
+          <p className="aksara-mono text-[0.7rem] text-[#a14a6a]">
+            {isSignUp ? "Sign Up" : "Sign In"}
+          </p>
           <h1 className="aksara-serif mt-4 text-[4.2rem] leading-[0.84] tracking-[-0.04em] text-[#24161d]">
-            Welcome
-            <br />
-            <span className="italic text-[#9b174b]">back.</span>
+            {isSignUp ? (
+              <>
+                Create
+                <br />
+                <span className="italic text-maroon-bright">account.</span>
+              </>
+            ) : (
+              <>
+                Welcome
+                <br />
+                <span className="italic text-maroon-bright">back.</span>
+              </>
+            )}
           </h1>
           <p className="mt-4 max-w-[15rem] text-[1.4rem] leading-8 text-[#615058]">
-            Your assignments are waiting for you
+            {isSignUp
+              ? "Set up your private planner in seconds"
+              : "Your assignments are waiting for you"}
           </p>
         </div>
 
         <div className="mt-8">
-          <LoginForm mobile />
+          <LoginForm mobile isSignUp={isSignUp} setIsSignUp={setIsSignUp} />
         </div>
 
         <footer className="mt-auto px-2 pb-8 pt-8 text-center">

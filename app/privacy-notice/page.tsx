@@ -22,13 +22,13 @@ export default function PrivacyNoticePage() {
         </Link>
 
         <section className="aksara-card mt-6 px-6 py-7 sm:px-10 sm:py-10">
-          <p className="aksara-mono text-[0.66rem] text-[#b24e72]">
+          <p className="aksara-mono text-[0.66rem] text-maroon-soft">
             Aksara / Privacy
           </p>
-          <h1 className="aksara-serif mt-4 text-[3.2rem] leading-[0.9] text-[#26171e] sm:text-[4.4rem]">
+          <h1 className="aksara-serif mt-4 text-[3.2rem] leading-[0.9] text-ink sm:text-[4.4rem]">
             Privacy
             <br />
-            <span className="italic text-[#a31657]">Notice.</span>
+            <span className="italic text-maroon-bright">Notice.</span>
           </h1>
           <p className="mt-5 max-w-2xl text-lg leading-8 text-[#6c5962]">
             This page explains, at a simple level, what information the site

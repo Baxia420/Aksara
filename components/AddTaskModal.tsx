@@ -2,8 +2,10 @@
 
 import { useState, useEffect } from "react";
 import { createTask, editTask, deleteTask } from "@/app/actions";
+import type { AcademicCourse, AcademicTask } from "@/lib/types";
+import { useEscapeKey } from "@/lib/useEscapeKey";
 
-export function AddTaskModal({ isOpen, onClose, tasks = [], courses = [], taskToEdit = null }: { isOpen: boolean; onClose: () => void; tasks?: any[]; courses?: any[]; taskToEdit?: any }) {
+export function AddTaskModal({ isOpen, onClose, tasks = [], courses = [], taskToEdit = null }: { isOpen: boolean; onClose: () => void; tasks?: AcademicTask[]; courses?: AcademicCourse[]; taskToEdit?: AcademicTask | null }) {
   const [isSubmitting, setIsSubmitting] = useState(false);
   const [selectedCourse, setSelectedCourse] = useState("");
   const [selectedType, setSelectedType] = useState("");
@@ -12,22 +14,28 @@ export function AddTaskModal({ isOpen, onClose, tasks = [], courses = [], taskTo
   const [dueTime, setDueTime] = useState("");
   const [showDeleteConfirm, setShowDeleteConfirm] = useState(false);
 
-  let uniqueCourses = courses.length > 0 
-    ? courses 
-    : Array.from(
-        new Map(
-          (tasks || [])
-            .filter((t) => t.courseCode && t.courseTitle && t.courseCode.toLowerCase() !== "test")
-            .map((t) => [t.courseCode, t.courseTitle])
-        ).entries()
-      ).map(([code, title]) => ({ code, title }));
+  const uniqueCourses: { code: string; title: string }[] =
+    courses.length > 0
+      ? courses.map((c) => ({ code: c.code, title: c.title }))
+      : Array.from(
+          new Map(
+            (tasks || [])
+              .filter(
+                (t) =>
+                  t.courseCode &&
+                  t.courseTitle &&
+                  t.courseCode.toLowerCase() !== "test",
+              )
+              .map((t) => [t.courseCode, t.courseTitle]),
+          ).entries(),
+        ).map(([code, title]) => ({ code, title }));
 
   const defaultTypes = ["Assignment", "Group Task", "Quiz", "Midterm", "Final Exam"];
   const uniqueTypes = Array.from(
     new Set([
       ...defaultTypes,
-      ...(tasks || []).map((t) => t.type).filter(t => t && t.toLowerCase() !== "wewe")
-    ])
+      ...(tasks || []).map((t) => t.type).filter((t) => t && t.toLowerCase() !== "wewe"),
+    ]),
   );
 
   // Reset state when opened
@@ -49,6 +57,8 @@ export function AddTaskModal({ isOpen, onClose, tasks = [], courses = [], taskTo
       }
     }
   }, [isOpen, taskToEdit]);
+
+  useEscapeKey(onClose, isOpen);
 
   if (!isOpen) return null;
 
@@ -82,22 +92,31 @@ export function AddTaskModal({ isOpen, onClose, tasks = [], courses = [], taskTo
   }
 
   return (
-    <div className="fixed inset-0 z-50 flex items-center justify-center bg-[#2a1820]/50 p-4 backdrop-blur-sm">
-      <div className="aksara-card w-full max-w-lg p-8">
-        <h2 className="aksara-serif text-3xl font-semibold mb-6 text-[#26171e]">
+    <div
+      className="fixed inset-0 z-50 flex items-center justify-center bg-[#2a1820]/50 p-4 backdrop-blur-sm"
+      onClick={onClose}
+    >
+      <div
+        role="dialog"
+        aria-modal="true"
+        aria-label={taskToEdit ? "Edit task" : "Add new task"}
+        className="aksara-card w-full max-w-lg p-8"
+        onClick={(e) => e.stopPropagation()}
+      >
+        <h2 className="aksara-serif text-3xl font-semibold mb-6 text-ink">
           {taskToEdit ? "Edit Task" : "Add New Task"}
         </h2>
         <form action={handleSubmit} className="space-y-4">
           {taskToEdit && <input type="hidden" name="id" value={taskToEdit.id} />}
           <div className="grid grid-cols-2 gap-4">
             <div>
-              <label className="block text-sm font-semibold mb-1 text-[#8f7881]">Course Code</label>
+              <label className="block text-sm font-semibold mb-1 text-ink-soft">Course Code</label>
               <select 
                 required 
                 name="courseCode" 
                 value={selectedCourse}
                 onChange={(e) => setSelectedCourse(e.target.value)}
-                className="w-full border border-[#ecd9de] rounded-[0.85rem] px-4 py-3 outline-none focus:border-[#a31657] bg-white"
+                className="w-full border border-[#ecd9de] rounded-[0.85rem] px-4 py-3 outline-none focus:border-maroon-bright bg-white"
               >
                 <option value="" disabled>Select a code</option>
                 {uniqueCourses.map(c => (
@@ -106,39 +125,32 @@ export function AddTaskModal({ isOpen, onClose, tasks = [], courses = [], taskTo
               </select>
             </div>
             <div>
-              <label className="block text-sm font-semibold mb-1 text-[#8f7881]">Course Title</label>
+              <label className="block text-sm font-semibold mb-1 text-ink-soft">Course Title</label>
               <input type="hidden" name="courseTitle" value={uniqueCourses.find(c => c.code === selectedCourse)?.title || ""} />
-              <select 
-                value={selectedCourse}
-                onChange={(e) => setSelectedCourse(e.target.value)}
-                className="w-full border border-[#ecd9de] rounded-[0.85rem] px-4 py-3 outline-none focus:border-[#a31657] bg-white"
-              >
-                <option value="" disabled>Select a title</option>
-                {uniqueCourses.map(c => (
-                  <option key={c.title} value={c.code}>{c.title}</option>
-                ))}
-              </select>
+              <div className="w-full border border-[#ecd9de] rounded-[0.85rem] px-4 py-3 bg-[#fdfaf7] text-ink-muted truncate">
+                {uniqueCourses.find((c) => c.code === selectedCourse)?.title || "Select a code first"}
+              </div>
             </div>
           </div>
           <div>
-            <label className="block text-sm font-semibold mb-1 text-[#8f7881]">Task Title</label>
+            <label className="block text-sm font-semibold mb-1 text-ink-soft">Task Title</label>
             <input 
               required 
               name="title" 
               value={title}
               onChange={(e) => setTitle(e.target.value)}
               placeholder="Final Project Phase 1" 
-              className="w-full border border-[#ecd9de] rounded-[0.85rem] px-4 py-3 outline-none focus:border-[#a31657]" 
+              className="w-full border border-[#ecd9de] rounded-[0.85rem] px-4 py-3 outline-none focus:border-maroon-bright" 
             />
           </div>
           <div>
-            <label className="block text-sm font-semibold mb-1 text-[#8f7881]">Type</label>
+            <label className="block text-sm font-semibold mb-1 text-ink-soft">Type</label>
             <select 
               required 
               name="type" 
               value={selectedType}
               onChange={(e) => setSelectedType(e.target.value)}
-              className="w-full border border-[#ecd9de] rounded-[0.85rem] px-4 py-3 outline-none focus:border-[#a31657] bg-white"
+              className="w-full border border-[#ecd9de] rounded-[0.85rem] px-4 py-3 outline-none focus:border-maroon-bright bg-white"
             >
               <option value="" disabled>Select a type</option>
               {uniqueTypes.map(type => (
@@ -148,25 +160,25 @@ export function AddTaskModal({ isOpen, onClose, tasks = [], courses = [], taskTo
           </div>
           <div className="grid grid-cols-2 gap-4">
             <div>
-              <label className="block text-sm font-semibold mb-1 text-[#8f7881]">Due Date</label>
+              <label className="block text-sm font-semibold mb-1 text-ink-soft">Due Date</label>
               <input 
                 required 
                 type="date" 
                 name="dueDate" 
                 value={dueDate}
                 onChange={(e) => setDueDate(e.target.value)}
-                className="w-full border border-[#ecd9de] rounded-[0.85rem] px-4 py-3 outline-none focus:border-[#a31657]" 
+                className="w-full border border-[#ecd9de] rounded-[0.85rem] px-4 py-3 outline-none focus:border-maroon-bright" 
               />
             </div>
             <div>
-              <label className="block text-sm font-semibold mb-1 text-[#8f7881]">Due Time (Optional)</label>
+              <label className="block text-sm font-semibold mb-1 text-ink-soft">Due Time (Optional)</label>
               <input 
                 type="text" 
                 name="dueTime" 
                 value={dueTime}
                 onChange={(e) => setDueTime(e.target.value)}
                 placeholder="e.g. 11:59 PM or 23:59" 
-                className="w-full border border-[#ecd9de] rounded-[0.85rem] px-4 py-3 outline-none focus:border-[#a31657]" 
+                className="w-full border border-[#ecd9de] rounded-[0.85rem] px-4 py-3 outline-none focus:border-maroon-bright" 
               />
             </div>
           </div>
@@ -175,18 +187,18 @@ export function AddTaskModal({ isOpen, onClose, tasks = [], courses = [], taskTo
               {taskToEdit && (
                 showDeleteConfirm ? (
                   <div className="flex items-center gap-2">
-                    <span className="text-xs text-[#a31657] font-semibold">Delete task?</span>
+                    <span className="text-xs text-maroon-bright font-semibold">Delete task?</span>
                     <button 
                       type="button" 
                       onClick={handleDelete}
-                      className="px-3 py-1.5 text-xs font-semibold text-white bg-[#a31657] hover:bg-[#83103e] rounded-lg transition"
+                      className="px-3 py-1.5 text-xs font-semibold text-white bg-maroon-bright hover:bg-maroon rounded-lg transition"
                     >
                       Yes
                     </button>
                     <button 
                       type="button" 
                       onClick={() => setShowDeleteConfirm(false)}
-                      className="px-3 py-1.5 text-xs font-semibold text-[#8f7881] hover:text-[#26171e] rounded-lg transition"
+                      className="px-3 py-1.5 text-xs font-semibold text-ink-soft hover:text-ink rounded-lg transition"
                     >
                       No
                     </button>
@@ -195,7 +207,7 @@ export function AddTaskModal({ isOpen, onClose, tasks = [], courses = [], taskTo
                   <button 
                     type="button" 
                     onClick={() => setShowDeleteConfirm(true)}
-                    className="px-4 py-2 text-xs font-semibold text-[#a31657] border border-[#a31657]/30 hover:border-[#a31657] hover:bg-[#a31657]/5 rounded-[0.85rem] transition"
+                    className="px-4 py-2 text-xs font-semibold text-maroon-bright border border-maroon-bright/30 hover:border-maroon-bright hover:bg-maroon-bright/5 rounded-[0.85rem] transition"
                   >
                     Delete Task
                   </button>
@@ -203,7 +215,7 @@ export function AddTaskModal({ isOpen, onClose, tasks = [], courses = [], taskTo
               )}
             </div>
             <div className="flex gap-3">
-              <button type="button" onClick={onClose} className="px-5 py-3 font-semibold text-[#8f7881] hover:text-[#26171e] transition rounded-[0.85rem]">
+              <button type="button" onClick={onClose} className="px-5 py-3 font-semibold text-ink-soft hover:text-ink transition rounded-[0.85rem]">
                 Cancel
               </button>
               <button type="submit" disabled={isSubmitting || !selectedCourse || !selectedType} className="aksara-primary-button px-6 py-3 font-semibold text-white rounded-[0.85rem] disabled:opacity-70">

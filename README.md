@@ -1,36 +1,68 @@
-This is a [Next.js](https://nextjs.org) project bootstrapped with [`create-next-app`](https://nextjs.org/docs/app/api-reference/cli/create-next-app).
+# Aksara — Academic OS
 
-## Getting Started
+A calm, private academic planning dashboard for tracking assignments, quizzes,
+exams, courses, and focus sessions. Built with Next.js (App Router), React,
+Tailwind CSS v4, and Supabase.
 
-First, run the development server:
+## Features
 
-```bash
-npm run dev
-# or
-yarn dev
-# or
-pnpm dev
-# or
-bun dev
-```
+- **Dashboard** — greeting, progress wheel, weekly focus time, and a task
+  completion velocity sparkline.
+- **Calendar** — month view with per-day deadline markers and hover details.
+- **Tasks** — filterable sprint board (pending / group / urgent / done) with
+  inline complete and edit.
+- **Courses** — explicit course list with per-course color theming.
+- **Focus** — Pomodoro timer with per-task/per-course weekly time breakdown.
 
-Open [http://localhost:3000](http://localhost:3000) with your browser to see the result.
+## Architecture notes
 
-You can start editing the page by modifying `app/page.tsx`. The page auto-updates as you edit the file.
+- Dashboard data is fetched **once on the server** in `app/dashboard/layout.tsx`
+  via `lib/academic-data.ts` (`getDashboardData`, memoized with `React.cache`).
+  The layout passes the promise down through `DashboardDataProvider`; the page
+  reads it with the React `use` API. Because the layout stays mounted across the
+  dashboard tabs, switching tabs never refetches. Mutations call
+  `router.refresh()` to pull fresh server data.
+- `app/dashboard/loading.tsx` provides the instant skeleton, and
+  `app/dashboard/error.tsx` the error boundary.
+- Shared modules live in `lib/`: `types.ts` (domain types), `dateUtils.ts`
+  (date/relative-time helpers), `courseTheme.ts` (the single source of truth for
+  course colors), and small hooks (`useIsDesktop`, `useEscapeKey`).
+- Design tokens are defined in `app/globals.css` and exposed to Tailwind via
+  `@theme` (e.g. `text-maroon`, `bg-gold`, `text-ink-muted`).
+- Auth/session handling runs in `proxy.ts` (this Next version's middleware) using
+  Supabase SSR cookies.
 
-This project uses [`next/font`](https://nextjs.org/docs/app/building-your-application/optimizing/fonts) to automatically optimize and load [Geist](https://vercel.com/font), a new font family for Vercel.
+## Getting started
 
-## Learn More
+1. Copy `.env.example` to `.env.local` and fill in your Supabase project values
+   and `ADMIN_EMAIL` (the account that owns shared/public courses and tasks).
+2. Install and run the dev server:
 
-To learn more about Next.js, take a look at the following resources:
+   ```bash
+   npm install
+   npm run dev
+   ```
 
-- [Next.js Documentation](https://nextjs.org/docs) - learn about Next.js features and API.
-- [Learn Next.js](https://nextjs.org/learn) - an interactive Next.js tutorial.
+3. Open [http://localhost:3000](http://localhost:3000).
 
-You can check out [the Next.js GitHub repository](https://github.com/vercel/next.js) - your feedback and contributions are welcome!
+### Required environment variables
 
-## Deploy on Vercel
+| Variable | Purpose |
+| --- | --- |
+| `NEXT_PUBLIC_SUPABASE_URL` | Supabase project URL |
+| `NEXT_PUBLIC_SUPABASE_ANON_KEY` | Supabase anon key |
+| `SUPABASE_SERVICE_ROLE_KEY` | Service role key (server-side) |
+| `ADMIN_EMAIL` | Owner of shared/public courses and tasks |
 
-The easiest way to deploy your Next.js app is to use the [Vercel Platform](https://vercel.com/new?utm_medium=default-template&filter=next.js&utm_source=create-next-app&utm_campaign=create-next-app-readme) from the creators of Next.js.
+## Scripts
 
-Check out our [Next.js deployment documentation](https://nextjs.org/docs/app/building-your-application/deploying) for more details.
+- `npm run dev` — start the dev server
+- `npm run build` — production build
+- `npm run start` — serve the production build
+- `npm run lint` — run ESLint
+
+## Database
+
+Supabase (PostgreSQL) with Row Level Security. Tables: `tasks`, `courses`,
+`user_task_completions`, `focus_logs`. Data mutations go through Next.js Server
+Actions in `app/actions.ts`.

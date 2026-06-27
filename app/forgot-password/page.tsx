@@ -14,13 +14,13 @@ export default function ForgotPasswordPage() {
         </Link>
 
         <section className="aksara-card mt-6 px-6 py-10 text-center sm:px-10 sm:py-14">
-          <p className="aksara-mono text-[0.66rem] text-[#b24e72]">
+          <p className="aksara-mono text-[0.66rem] text-maroon-soft">
             Account Support
           </p>
-          <h1 className="aksara-serif mt-4 text-[3rem] leading-[0.9] text-[#26171e] sm:text-[4.2rem]">
+          <h1 className="aksara-serif mt-4 text-[3rem] leading-[0.9] text-ink sm:text-[4.2rem]">
             Please contact
             <br />
-            <span className="italic text-[#a31657]">the administrator.</span>
+            <span className="italic text-maroon-bright">the administrator.</span>
           </h1>
           <p className="mx-auto mt-5 max-w-xl text-lg leading-8 text-[#6c5962]">
             If you cannot access your account or need your password reset,

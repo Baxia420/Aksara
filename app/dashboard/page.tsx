@@ -2,78 +2,52 @@
 
 import Link from "next/link";
 import { usePathname, useRouter } from "next/navigation";
-import { useEffect, useMemo, useState, useTransition, useCallback } from "react";
+import { use, useEffect, useMemo, useState, useTransition, useCallback } from "react";
 import { toggleTaskCompletion, signOutUser } from "@/app/actions";
 import { AddTaskModal } from "@/components/AddTaskModal";
 import { ManageCoursesModal } from "@/components/ManageCoursesModal";
 import { AccountSettingsModal } from "@/components/AccountSettingsModal";
 import {
-  Bell,
   BookOpen,
   CalendarDays,
   ChevronLeft,
   ChevronRight,
+  GraduationCap,
   Home,
   ListTodo,
   Pencil,
-  Search,
   Timer,
-  TriangleAlert,
 } from "lucide-react";
 import { FocusTimerView } from "@/components/FocusTimerView";
-
-type MobileView = "dashboard" | "calendar" | "tasks" | "courses" | "focus";
-type MarkerTone = "overdue" | "due" | "upcoming";
-type TaskFilter = "pending" | "group" | "urgent" | "completed";
-
-type AcademicTask = {
-  id: string;
-  completed: boolean;
-  courseCode: string;
-  courseDisplay: string;
-  courseTitle: string;
-  daysRemaining: number;
-  dueDateIso: string;
-  dueTime: string;
-  title: string;
-  type: string;
-  completedAt?: string | null;
-  createdAt?: string | null;
-};
-
-type AcademicCourse = {
-  id: string;
-  code: string;
-  title: string;
-  colorIndex: number;
-};
-
-type FocusLog = {
-  id: string;
-  userId: string;
-  taskId: string | null;
-  duration: number;
-  type: "focus" | "shortBreak" | "longBreak";
-  createdAt: string;
-};
-
-type DashboardApiResponse =
-  | {
-      sourceUrl: string;
-      syncedAt: string;
-      user?: {
-        email: string;
-        name: string;
-        firstName?: string;
-        lastName?: string;
-      };
-      tasks: AcademicTask[];
-      courses: AcademicCourse[];
-      focusLogs: FocusLog[];
-    }
-  | {
-      message: string;
-    };
+import { useDashboardDataPromise } from "@/components/dashboard/DashboardDataProvider";
+import { useIsDesktop } from "@/lib/useIsDesktop";
+import type {
+  AcademicCourse,
+  AcademicTask,
+  DashboardView as MobileView,
+  FocusLog,
+  MarkerTone,
+  TaskFilter,
+  UserProfile,
+} from "@/lib/types";
+import { coursePillClasses, courseTints } from "@/lib/courseTheme";
+import {
+  formatDashboardDate,
+  formatDueDateTime,
+  formatFullDate,
+  formatMonthShort,
+  formatMonthYear,
+  formatRelativeLabel,
+  formatWeekdayLong,
+  formatWeekdayShort,
+  getExactDiffMs,
+  getGreeting,
+  getTaskAccent,
+  getTaskTone,
+  markerClassNames,
+  markerLabels,
+  toDate,
+} from "@/lib/dateUtils";
 
 type CourseCard = {
   code: string;
@@ -84,24 +58,6 @@ type CourseCard = {
   title: string;
   totalTasks: number;
 };
-
-const courseTints = [
-  "bg-[#fbf4f1]",
-  "bg-[#fdf8f4]",
-  "bg-[#eef4f7]",
-  "bg-[#eff3f7]",
-  "bg-[#f8f7f3]",
-  "bg-[#fcf4e7]",
-];
-
-const coursePillClasses = [
-  "border-[#dfb1c1] bg-[#fff7fa] text-[#9f4568]",
-  "border-[#eac08a] bg-[#fffaf1] text-[#b87b26]",
-  "border-[#a2c7eb] bg-[#f4fbff] text-[#467db6]",
-  "border-[#b9c8ec] bg-[#f5f8ff] text-[#5d75b3]",
-  "border-[#d7cfb7] bg-[#fcfbf5] text-[#7e6f3f]",
-  "border-[#f1d5a2] bg-[#fff8ec] text-[#ad7d1c]",
-];
 
 const mobileTabs: Array<{
   icon: React.ComponentType<{ className?: string }>;
@@ -136,70 +92,6 @@ const dashboardRoutes: Record<MobileView, string> = {
   focus: "/dashboard/focus",
 };
 
-const markerLabels: Record<MarkerTone, string> = {
-  overdue: "Overdue",
-  due: "Due soon",
-  upcoming: "Upcoming",
-};
-
-const markerClassNames: Record<MarkerTone, string> = {
-  overdue: "bg-[#a91c58]",
-  due: "bg-[#d89d2c]",
-  upcoming: "bg-[#c9839d]",
-};
-
-function toDate(isoDate: string) {
-  const [year, month, day] = isoDate.split("-").map(Number);
-  return new Date(year, month - 1, day);
-}
-
-function formatFullDate(isoDate: string) {
-  return new Intl.DateTimeFormat("en-GB", {
-    day: "2-digit",
-    month: "short",
-    year: "numeric",
-  }).format(toDate(isoDate));
-}
-
-function formatDueDateTime(task: AcademicTask) {
-  return task.dueTime
-    ? `${formatFullDate(task.dueDateIso)} / ${task.dueTime}`
-    : formatFullDate(task.dueDateIso);
-}
-
-function formatDashboardDate(date: Date) {
-  const parts = new Intl.DateTimeFormat("en-GB", {
-    day: "2-digit",
-    month: "short",
-    weekday: "long",
-    year: "numeric",
-  }).formatToParts(date);
-  const getPart = (type: Intl.DateTimeFormatPartTypes) =>
-    parts.find((part) => part.type === type)?.value ?? "";
-
-  return `${getPart("weekday")} / ${getPart("day")} ${getPart(
-    "month",
-  )} ${getPart("year")}`.toUpperCase();
-}
-
-function getGreeting(date: Date) {
-  const hour = date.getHours();
-
-  if (hour < 5) {
-    return "Good night";
-  }
-
-  if (hour < 12) {
-    return "Good morning";
-  }
-
-  if (hour < 17) {
-    return "Good afternoon";
-  }
-
-  return "Good evening";
-}
-
 function getViewFromPathname(pathname: string): MobileView {
   if (pathname.endsWith("/calendar")) {
     return "calendar";
@@ -220,116 +112,6 @@ function getViewFromPathname(pathname: string): MobileView {
   return "dashboard";
 }
 
-function formatMonthYear(date: Date) {
-  return new Intl.DateTimeFormat("en-US", {
-    month: "long",
-    year: "numeric",
-  }).format(date);
-}
-
-function formatMonthShort(date: Date) {
-  return new Intl.DateTimeFormat("en-US", { month: "short" }).format(date);
-}
-
-function formatWeekdayShort(date: Date) {
-  return new Intl.DateTimeFormat("en-US", { weekday: "short" }).format(date);
-}
-
-function formatWeekdayLong(date: Date) {
-  return new Intl.DateTimeFormat("en-US", { weekday: "long" }).format(date);
-}
-
-function getExactDiffMs(task: AcademicTask, now: Date) {
-  const [year, month, day] = task.dueDateIso.split("-").map(Number);
-  let hours = 23;
-  let minutes = 59;
-  let seconds = 59;
-
-  if (task.dueTime) {
-    const match = task.dueTime.match(/^(\d{1,2}):(\d{2})\s*(AM|PM)?$/i);
-    if (match) {
-      let h = parseInt(match[1], 10);
-      const m = parseInt(match[2], 10);
-      const period = match[3];
-
-      if (period) {
-        if (period.toUpperCase() === "PM" && h < 12) h += 12;
-        if (period.toUpperCase() === "AM" && h === 12) h = 0;
-      }
-      hours = h;
-      minutes = m;
-      seconds = 0;
-    }
-  }
-
-  const target = new Date(year, month - 1, day, hours, minutes, seconds);
-  return target.getTime() - now.getTime();
-}
-
-function formatRelativeLabel(task: AcademicTask, now: Date = new Date()) {
-  const diffMs = getExactDiffMs(task, now);
-  const isOverdue = diffMs < 0;
-  const absMs = Math.abs(diffMs);
-  
-  const totalMinutes = Math.floor(absMs / 60000);
-  const totalHours = Math.floor(totalMinutes / 60);
-  const days = Math.floor(totalHours / 24);
-  const remHours = totalHours % 24;
-  const remMinutes = totalMinutes % 60;
-
-  if (isOverdue) {
-    if (days > 0) {
-      return `${days}d overdue`;
-    }
-    if (totalHours > 0) {
-      return `${totalHours}h overdue`;
-    }
-    return `${totalMinutes}m overdue`;
-  }
-
-  if (days > 0) {
-    return `${days}d ${remHours}h left`;
-  }
-
-  if (totalHours > 0) {
-    return `${totalHours}h ${remMinutes}m left`;
-  }
-
-  return `${totalMinutes}m left`;
-}
-
-function getTaskTone(task: AcademicTask, now: Date = new Date()): MarkerTone {
-  const diffMs = getExactDiffMs(task, now);
-  
-  if (diffMs < 0) {
-    return "overdue";
-  }
-
-  if (diffMs <= 259200000) { // 3 days
-    return "due";
-  }
-
-  return "upcoming";
-}
-
-function getTaskAccent(task: AcademicTask, now: Date = new Date()) {
-  if (task.completed) {
-    return "text-[#6f5b64]";
-  }
-
-  const diffMs = getExactDiffMs(task, now);
-
-  if (diffMs < 0) {
-    return "text-[#a31657]";
-  }
-
-  if (diffMs <= 259200000) { // 3 days
-    return "text-[#b87b26]";
-  }
-
-  return "text-[#7d656f]";
-}
-
 function BrandGlyph({ size = "default" }: { size?: "default" | "small" }) {
   const classes =
     size === "small"
@@ -338,9 +120,9 @@ function BrandGlyph({ size = "default" }: { size?: "default" | "small" }) {
 
   return (
     <div
-      className={`${classes} flex items-center justify-center bg-[#83103e] text-[#e2a22f] shadow-[0_12px_28px_rgba(131,16,62,0.18)]`}
+      className={`${classes} flex items-center justify-center bg-maroon text-gold shadow-[0_12px_28px_rgba(131,16,62,0.18)]`}
     >
-      <TriangleAlert className={size === "small" ? "size-5" : "size-6"} />
+      <GraduationCap className={size === "small" ? "size-5" : "size-6"} />
     </div>
   );
 }
@@ -350,7 +132,7 @@ function BrandLockup() {
     <Link href="/" className="flex items-center gap-4">
       <BrandGlyph />
       <div>
-        <p className="aksara-serif text-[2rem] font-semibold leading-none text-[#83103e]">
+        <p className="aksara-serif text-[2rem] font-semibold leading-none text-maroon">
           Aksara
         </p>
         <p className="aksara-mono mt-1 text-[0.58rem] text-[#b07a88]">
@@ -358,82 +140,6 @@ function BrandLockup() {
         </p>
       </div>
     </Link>
-  );
-}
-
-function DashboardLoadingScreen() {
-  const [statusIndex, setStatusIndex] = useState(0);
-  const statuses = [
-    "Establishing secure database connection...",
-    "Syncing academic logs and schedules...",
-    "Hydrating course trackers & tasks...",
-    "Readying focus timer dashboard...",
-    "Optimizing student planner workspace..."
-  ];
-
-  useEffect(() => {
-    const timer = setInterval(() => {
-      setStatusIndex((prev) => (prev + 1) % statuses.length);
-    }, 1200);
-    return () => clearInterval(timer);
-  }, [statuses.length]);
-
-  return (
-    <div className="fixed inset-0 z-50 flex flex-col items-center justify-center p-4 bg-[#f8f1eb]/85 backdrop-blur-md">
-      {/* Background orbs */}
-      <div className="absolute inset-0 pointer-events-none overflow-hidden z-[-1]">
-        <div className="absolute top-[10%] left-[13%] w-[40%] h-[40%] rounded-full bg-[rgba(226,162,47,0.18)] blur-[80px]" />
-        <div className="absolute top-[25%] right-[22%] w-[35%] h-[35%] rounded-full bg-[rgba(226,162,47,0.15)] blur-[70px]" />
-        <div className="absolute bottom-[16%] left-[22%] w-[45%] h-[45%] rounded-full bg-[rgba(131,16,62,0.08)] blur-[90px]" />
-        <div className="absolute bottom-[25%] right-[8%] w-[30%] h-[30%] rounded-full bg-[rgba(188,124,147,0.1)] blur-[70px]" />
-      </div>
-
-      <div className="aksara-card w-full max-w-md p-10 text-center flex flex-col items-center justify-center rounded-[2.5rem]">
-        {/* Animated Brand Glyph Container */}
-        <div className="relative flex items-center justify-center size-32 mb-8">
-          {/* Rotating outer ring */}
-          <div className="absolute inset-0 rounded-full border-2 border-dashed border-[#e2a22f] opacity-60 animate-spin" style={{ animationDuration: '12s' }} />
-          {/* Inner ring */}
-          <div className="absolute inset-2 rounded-full border border-[#83103e]/20" />
-          
-          {/* Breathing glyph */}
-          <div className="size-16 rounded-[1.25rem] flex items-center justify-center bg-[#83103e] text-[#e2a22f] shadow-[0_12px_28px_rgba(131,16,62,0.22)] animate-pulse" style={{ animationDuration: '2s' }}>
-            <TriangleAlert className="size-7" />
-          </div>
-        </div>
-
-        <h2 className="aksara-serif text-3xl font-semibold text-[#83103e] mb-2">
-          Aksara OS
-        </h2>
-        <p className="text-[#6f5b64] text-sm max-w-xs mx-auto mb-6">
-          Initializing your premium workspace and syncing databases...
-        </p>
-
-        {/* Separator line */}
-        <div className="w-12 h-0.5 bg-[#e2a22f]/30 rounded-full mb-6" />
-
-        {/* Dynamic Monospace Status Text */}
-        <div className="min-h-[1.5rem] flex items-center justify-center">
-          <p className="aksara-mono text-[0.62rem] text-[#b34973] font-medium tracking-[0.25em] uppercase transition-all duration-300">
-            {statuses[statusIndex]}
-          </p>
-        </div>
-      </div>
-    </div>
-  );
-}
-
-function IconCircle({
-  children,
-  className = "",
-}: {
-  children: React.ReactNode;
-  className?: string;
-}) {
-  return (
-    <div className={`aksara-icon-button size-12 rounded-[1rem] ${className}`}>
-      {children}
-    </div>
   );
 }
 
@@ -493,7 +199,7 @@ function CalendarWidget({
         <div>
           <h2 className={`aksara-serif ${headingClass} text-[#2b1b22]`}>
             {formatMonthYear(monthDate).split(" ")[0]}{" "}
-            <span className="text-[#9e2555]">{year}</span>
+            <span className="text-maroon-bright">{year}</span>
           </h2>
           <p className="aksara-mono mt-2 text-[0.58rem] text-[#9f8b93]">
             Live schedule month
@@ -560,11 +266,11 @@ function CalendarWidget({
                     }
                     className={`flex h-10 w-10 items-center justify-center rounded-[1rem] text-base font-semibold ${
                       isActive
-                        ? "bg-[#9e2555] text-[#fff5f7] shadow-[0_10px_20px_rgba(131,16,62,0.22)]"
+                        ? "bg-maroon-bright text-[#fff5f7] shadow-[0_10px_20px_rgba(131,16,62,0.22)]"
                         : "text-[#46333b]"
                     } ${
                       hasDayTasks
-                        ? "cursor-pointer transition hover:bg-[#fff3f7] hover:text-[#9e2555] focus-visible:outline focus-visible:outline-2 focus-visible:outline-offset-2 focus-visible:outline-[#b22c67]"
+                        ? "cursor-pointer transition hover:bg-[#fff3f7] hover:text-maroon-bright focus-visible:outline focus-visible:outline-2 focus-visible:outline-offset-2 focus-visible:outline-maroon-bright"
                         : "cursor-default"
                     }`}
                   >
@@ -580,7 +286,7 @@ function CalendarWidget({
                   </div>
                   {hasDayTasks ? (
                     <div className="pointer-events-none absolute left-1/2 top-12 z-30 hidden w-64 max-w-[calc(100vw-3rem)] -translate-x-1/2 rounded-[1.15rem] border border-[#ecd9de] bg-[#fffaf6] p-4 text-left shadow-[0_18px_34px_rgba(131,16,62,0.14)] group-hover:block group-focus-within:block">
-                      <p className="aksara-mono text-[0.52rem] text-[#b24e72]">
+                      <p className="aksara-mono text-[0.52rem] text-maroon-soft">
                         {dateLabel}
                       </p>
                       <div className="mt-3 space-y-3">
@@ -593,7 +299,7 @@ function CalendarWidget({
                               className="border-l-2 border-[#ead4dc] pl-3"
                             >
                               <div className="flex items-center justify-between gap-3">
-                                <span className="text-xs font-semibold text-[#9e2555]">
+                                <span className="text-xs font-semibold text-maroon-bright">
                                   {task.courseCode}
                                 </span>
                                 <span className="flex items-center gap-1.5 text-xs text-[#8a747e]">
@@ -644,7 +350,7 @@ function CalendarWidget({
 }
 
 function getInitials(profile: { firstName?: string; lastName?: string; name?: string; email?: string } | null) {
-  if (!profile) return "J";
+  if (!profile) return "•";
   if (profile.firstName && profile.lastName) {
     return `${profile.firstName.charAt(0)}${profile.lastName.charAt(0)}`.toUpperCase();
   }
@@ -658,7 +364,10 @@ function getInitials(profile: { firstName?: string; lastName?: string; name?: st
     }
     return parts[0].substring(0, 2).toUpperCase();
   }
-  return "J";
+  if (profile.email) {
+    return profile.email.charAt(0).toUpperCase();
+  }
+  return "•";
 }
 
 function MobileTopBar({
@@ -694,28 +403,28 @@ function MobileTopBar({
           </h1>
         </div>
         <div className="flex items-center gap-3 pt-3">
-          <IconCircle>
-            <Bell className="size-4.5" />
-          </IconCircle>
           <div className="relative">
             <button
               onClick={() => setIsProfileOpen((prev) => !prev)}
-              className="flex size-12 cursor-pointer items-center justify-center rounded-full bg-[#e2a22f] text-sm font-bold text-[#7b173d] shadow-[0_10px_24px_rgba(226,162,47,0.28)] hover:brightness-105 active:scale-95 transition"
+              aria-label="Account menu"
+              aria-haspopup="menu"
+              aria-expanded={isProfileOpen}
+              className="flex size-12 cursor-pointer items-center justify-center rounded-full bg-gold text-sm font-bold text-[#7b173d] shadow-[0_10px_24px_rgba(226,162,47,0.28)] hover:brightness-105 active:scale-95 transition"
             >
               {getInitials(userProfile)}
             </button>
             {isProfileOpen && (
               <div className="absolute right-0 mt-2 w-52 rounded-2xl border border-[rgba(155,112,122,0.2)] bg-[#fffaf6] p-2 shadow-xl z-50 animate-in fade-in slide-in-from-top-2 duration-150">
-                <div className="px-4 py-2 text-xs font-semibold text-[#8f7881] border-b border-[#ecd9de] mb-1 text-left">
+                <div className="px-4 py-2 text-xs font-semibold text-ink-soft border-b border-[#ecd9de] mb-1 text-left">
                   Signed in as <br />
-                  <span className="text-[#26171e] break-all">{userProfile?.email}</span>
+                  <span className="text-ink break-all">{userProfile?.email}</span>
                 </div>
                 <button
                   onClick={() => {
                     setIsProfileOpen(false);
                     onOpenSettings();
                   }}
-                  className="w-full text-left px-4 py-2.5 text-sm font-semibold text-[#6f5b64] hover:bg-[#83103e]/5 hover:text-[#83103e] rounded-xl transition"
+                  className="w-full text-left px-4 py-2.5 text-sm font-semibold text-ink-muted hover:bg-maroon/5 hover:text-maroon rounded-xl transition"
                 >
                   Account Settings
                 </button>
@@ -766,55 +475,56 @@ function MobileTaskCard({
   );
 }
 
-interface CachedDashboardData {
-  user?: {
-    email: string;
-    name: string;
-    firstName?: string;
-    lastName?: string;
-  };
-  tasks: AcademicTask[];
-  courses: AcademicCourse[];
-  focusLogs: FocusLog[];
-  syncedAt: string | null;
-  sourceUrl: string | null;
-}
-
-let cachedDashboardData: CachedDashboardData | null = null;
-
 export default function DashboardPage() {
   const pathname = usePathname();
   const router = useRouter();
   const desktopView = getViewFromPathname(pathname);
   const mobileView = desktopView;
+
+  // Data is fetched once on the server (dashboard layout) and read here via the
+  // React `use` API. Navigating between tabs reuses the resolved promise, so it
+  // never refetches. router.refresh() re-runs the server fetch after mutations.
+  const dashboardData = use(useDashboardDataPromise());
+  const userProfile: UserProfile | null = dashboardData?.user ?? null;
+  const syncedAt = dashboardData?.syncedAt ?? null;
+
+  // Mount the focus timer once (it owns intervals + audio); the desktop and
+  // mobile layout trees both exist in the DOM, so without this it would mount
+  // twice. See useIsDesktop.
+  const isDesktop = useIsDesktop();
+
   const [currentTime, setCurrentTime] = useState(() => new Date());
   const [monthDate, setMonthDate] = useState(() => {
     const now = new Date();
     return new Date(now.getFullYear(), now.getMonth(), 1);
   });
   const [taskFilter, setTaskFilter] = useState<TaskFilter>("pending");
-  const [tasks, setTasks] = useState<AcademicTask[]>(() => cachedDashboardData?.tasks || []);
-  const [courses, setCourses] = useState<AcademicCourse[]>(() => cachedDashboardData?.courses || []);
-  const [focusLogs, setFocusLogs] = useState<FocusLog[]>(() => cachedDashboardData?.focusLogs || []);
-  const [userProfile, setUserProfile] = useState<{
-    email: string;
-    name: string;
-    firstName?: string;
-    lastName?: string;
-  } | null>(() => cachedDashboardData?.user || null);
+
+  // Local mirrors of the server data so task toggles feel instant. They are
+  // re-synced whenever fresh server data arrives (after router.refresh()).
+  const [tasks, setTasks] = useState<AcademicTask[]>(dashboardData?.tasks ?? []);
+  const [courses, setCourses] = useState<AcademicCourse[]>(dashboardData?.courses ?? []);
+  const [focusLogs, setFocusLogs] = useState<FocusLog[]>(dashboardData?.focusLogs ?? []);
+  useEffect(() => {
+    // Re-sync local mirrors when fresh server data arrives (after router.refresh).
+    // eslint-disable-next-line react-hooks/set-state-in-effect
+    setTasks(dashboardData?.tasks ?? []);
+    setCourses(dashboardData?.courses ?? []);
+    setFocusLogs(dashboardData?.focusLogs ?? []);
+  }, [dashboardData]);
+
   const [isProfileOpen, setIsProfileOpen] = useState(false);
   const [isSettingsOpen, setIsSettingsOpen] = useState(false);
   const [isManageCoursesOpen, setIsManageCoursesOpen] = useState(false);
   const [taskToEdit, setTaskToEdit] = useState<AcademicTask | null>(null);
-  const [isLoading, setIsLoading] = useState(() => !cachedDashboardData);
-  const [error, setError] = useState<string | null>(null);
-  const [syncedAt, setSyncedAt] = useState<string | null>(() => cachedDashboardData?.syncedAt || null);
-  const [sourceUrl, setSourceUrl] = useState<string | null>(() => cachedDashboardData?.sourceUrl || null);
+  const [isModalOpen, setIsModalOpen] = useState(false);
+  const [, startTransition] = useTransition();
+
+  const refresh = useCallback(() => router.refresh(), [router]);
 
   const handleLogout = useCallback(async () => {
     try {
       await signOutUser();
-      cachedDashboardData = null;
       window.location.href = "/";
     } catch (e) {
       console.error("Logout failed", e);
@@ -828,64 +538,6 @@ export default function DashboardPage() {
 
     return () => window.clearInterval(timer);
   }, []);
-
-  const [isModalOpen, setIsModalOpen] = useState(false);
-  const [, startTransition] = useTransition();
-
-  const loadSheetData = useCallback(async () => {
-    try {
-      if (!cachedDashboardData) {
-        setIsLoading(true);
-      }
-      setError(null);
-      const response = await fetch("/api/academic-sheet", {
-        cache: "no-store",
-      });
-      const data = (await response.json()) as DashboardApiResponse;
-
-      if (!response.ok || "message" in data) {
-        if (response.status === 401) {
-          cachedDashboardData = null;
-        }
-        throw new Error(
-          "message" in data ? data.message : "Unable to load data.",
-        );
-      }
-
-      setTasks(data.tasks);
-      setCourses(data.courses || []);
-      setFocusLogs(data.focusLogs || []);
-      setSyncedAt(data.syncedAt);
-      setSourceUrl(data.sourceUrl);
-      if ("user" in data && data.user) {
-        setUserProfile(data.user);
-      }
-
-      cachedDashboardData = {
-        user: "user" in data ? data.user : undefined,
-        tasks: data.tasks,
-        courses: data.courses || [],
-        focusLogs: data.focusLogs || [],
-        syncedAt: data.syncedAt,
-        sourceUrl: data.sourceUrl,
-      };
-
-      setError(null);
-    } catch (loadError) {
-      setError(
-        loadError instanceof Error
-          ? loadError.message
-          : "Unable to load data.",
-      );
-    } finally {
-      setIsLoading(false);
-    }
-  }, []);
-
-  useEffect(() => {
-    // eslint-disable-next-line react-hooks/set-state-in-effect
-    void loadSheetData();
-  }, [loadSheetData]);
 
   const [taskToConfirm, setTaskToConfirm] = useState<string | null>(null);
 
@@ -1160,40 +812,16 @@ export default function DashboardPage() {
     { filter: "completed", label: `Done: ${summary.completed}` },
   ];
 
-  const greetingText = useMemo(() => {
-    if (isLoading) {
-      return "Syncing your academic tracker from database.";
-    }
-
-    if (error) {
-      return error;
-    }
-
-    if (pendingTasks.length === 0) {
-      return "No active deadlines were found.";
-    }
-
-    if (pendingTasks.length === 1) {
-      return "1 active deadline is currently tracked.";
-    }
-
-    return `${pendingTasks.length} active deadlines are currently tracked.`;
-  }, [error, isLoading, pendingTasks.length]);
-
   const syncLabel = useMemo(() => {
-    if (error) {
-      return "Database sync failed";
-    }
-
-    if (isLoading || !syncedAt) {
-      return "Loading tasks";
+    if (!syncedAt) {
+      return "Synced";
     }
 
     return `Synced ${new Date(syncedAt).toLocaleTimeString("en-MY", {
       hour: "2-digit",
       minute: "2-digit",
     })}`;
-  }, [error, isLoading, syncedAt]);
+  }, [syncedAt]);
 
   const nextTask = pendingTasks[0] ?? null;
   const todayTasks = pendingTasks.filter((task) => task.daysRemaining === 0);
@@ -1216,22 +844,27 @@ export default function DashboardPage() {
     router.push(dashboardRoutes[view]);
   };
 
-  if (isLoading && tasks.length === 0) {
-    return <DashboardLoadingScreen />;
-  }
-
   return (
     <main className="min-h-screen px-4 py-4 lg:px-6 lg:py-6">
-      <AddTaskModal isOpen={isModalOpen} onClose={() => { setIsModalOpen(false); setTaskToEdit(null); void loadSheetData(); }} tasks={tasks} courses={courses} taskToEdit={taskToEdit} />
-      <ManageCoursesModal isOpen={isManageCoursesOpen} onClose={() => { setIsManageCoursesOpen(false); void loadSheetData(); }} onRefresh={() => { void loadSheetData(); }} courses={courses} />
-      <AccountSettingsModal isOpen={isSettingsOpen} onClose={() => { setIsSettingsOpen(false); void loadSheetData(); }} userProfile={userProfile} />
+      <AddTaskModal isOpen={isModalOpen} onClose={() => { setIsModalOpen(false); setTaskToEdit(null); refresh(); }} tasks={tasks} courses={courses} taskToEdit={taskToEdit} />
+      <ManageCoursesModal isOpen={isManageCoursesOpen} onClose={() => { setIsManageCoursesOpen(false); refresh(); }} onRefresh={refresh} courses={courses} />
+      <AccountSettingsModal isOpen={isSettingsOpen} onClose={() => { setIsSettingsOpen(false); refresh(); }} userProfile={userProfile} />
       {taskToConfirm && (
-        <div className="fixed inset-0 z-50 flex items-center justify-center bg-[#2a1820]/50 p-4 backdrop-blur-sm">
-          <div className="aksara-card w-full max-w-sm p-8 text-center rounded-[1.8rem]">
-            <h3 className="aksara-serif text-2xl font-semibold mb-3 text-[#26171e]">Complete Task?</h3>
-            <p className="text-[#8f7881] mb-6">Are you sure you want to mark this task as completed?</p>
+        <div
+          className="fixed inset-0 z-50 flex items-center justify-center bg-[#2a1820]/50 p-4 backdrop-blur-sm"
+          onClick={() => setTaskToConfirm(null)}
+        >
+          <div
+            role="dialog"
+            aria-modal="true"
+            aria-label="Complete task"
+            className="aksara-card w-full max-w-sm p-8 text-center rounded-[1.8rem]"
+            onClick={(e) => e.stopPropagation()}
+          >
+            <h3 className="aksara-serif text-2xl font-semibold mb-3 text-ink">Complete Task?</h3>
+            <p className="text-ink-soft mb-6">Are you sure you want to mark this task as completed?</p>
             <div className="flex justify-center gap-3">
-              <button onClick={() => setTaskToConfirm(null)} className="px-5 py-2.5 font-semibold text-[#8f7881] hover:text-[#26171e] transition rounded-[0.85rem]">
+              <button onClick={() => setTaskToConfirm(null)} className="px-5 py-2.5 font-semibold text-ink-soft hover:text-ink transition rounded-[0.85rem]">
                 Cancel
               </button>
               <button onClick={confirmCompletion} className="aksara-primary-button px-6 py-2.5 font-semibold text-white rounded-[0.85rem]">
@@ -1278,29 +911,28 @@ export default function DashboardPage() {
               </div>
 
               <div className="flex items-center gap-4">
-
-                <IconCircle className="size-14 rounded-full">
-                  <Bell className="size-4.5" />
-                </IconCircle>
                 <div className="relative">
                   <button
                     onClick={() => setIsProfileOpen((prev) => !prev)}
-                    className="flex size-14 cursor-pointer items-center justify-center rounded-full border border-[#edd9de] bg-white text-sm font-bold text-[#a31657] shadow-[0_10px_24px_rgba(131,16,62,0.07)] hover:border-[#a31657] transition"
+                    aria-label="Account menu"
+                    aria-haspopup="menu"
+                    aria-expanded={isProfileOpen}
+                    className="flex size-14 cursor-pointer items-center justify-center rounded-full border border-[#edd9de] bg-white text-sm font-bold text-maroon-bright shadow-[0_10px_24px_rgba(131,16,62,0.07)] hover:border-maroon-bright transition"
                   >
                     {getInitials(userProfile)}
                   </button>
                   {isProfileOpen && (
                     <div className="absolute right-0 mt-2 w-56 rounded-2xl border border-[rgba(155,112,122,0.2)] bg-[#fffaf6] p-2 shadow-xl z-50 animate-in fade-in slide-in-from-top-2 duration-150">
-                      <div className="px-4 py-2 text-xs font-semibold text-[#8f7881] border-b border-[#ecd9de] mb-1 text-left">
+                      <div className="px-4 py-2 text-xs font-semibold text-ink-soft border-b border-[#ecd9de] mb-1 text-left">
                         Signed in as <br />
-                        <span className="text-[#26171e] break-all">{userProfile?.email}</span>
+                        <span className="text-ink break-all">{userProfile?.email}</span>
                       </div>
                       <button
                         onClick={() => {
                           setIsProfileOpen(false);
                           setIsSettingsOpen(true);
                         }}
-                        className="w-full text-left px-4 py-2.5 text-sm font-semibold text-[#6f5b64] hover:bg-[#83103e]/5 hover:text-[#83103e] rounded-xl transition"
+                        className="w-full text-left px-4 py-2.5 text-sm font-semibold text-ink-muted hover:bg-maroon/5 hover:text-maroon rounded-xl transition"
                       >
                         Account Settings
                       </button>
@@ -1329,24 +961,24 @@ export default function DashboardPage() {
                 <article id="dashboard-home" className="aksara-card p-8 flex flex-col gap-6">
                   {/* Row 1: Greeting & Summary */}
                   <div>
-                    <p className="aksara-mono text-[0.66rem] text-[#b24e72] mb-3">
+                    <p className="aksara-mono text-[0.66rem] text-maroon-soft mb-3">
                       {dashboardDateLabel} / {syncLabel}
                     </p>
-                    <h1 className="aksara-serif text-[4rem] leading-[0.98] tracking-[-0.05em] text-[#26171e] mb-4">
+                    <h1 className="aksara-serif text-[4rem] leading-[0.98] tracking-[-0.05em] text-ink mb-4">
                       {greetingLabel},{" "}
-                      <span className="italic text-[#a31657]">{userProfile?.name || "Student"}.</span>
+                      <span className="italic text-maroon-bright">{userProfile?.name || "Student"}.</span>
                     </h1>
-                    <p className="text-[1.38rem] leading-9 text-[#5d4d55] max-w-2xl">
+                    <p className="text-[1.38rem] leading-9 text-ink-body max-w-2xl">
                       You have{" "}
-                      <span className="text-[#a31657] font-semibold">
+                      <span className="text-maroon-bright font-semibold">
                         {summary.pending} pending task{summary.pending === 1 ? "" : "s"}
                       </span>{" "}
                       and{" "}
-                      <span className="text-[#a31657] font-semibold">
+                      <span className="text-maroon-bright font-semibold">
                         {summary.pendingExams} exam{summary.pendingExams === 1 ? "" : "s"}
                       </span>{" "}
                       on your schedule.{" "}
-                      <span className="text-[#a31657] font-semibold">
+                      <span className="text-maroon-bright font-semibold">
                         {pendingTasks.filter(t => getExactDiffMs(t, currentTime) <= 2 * 86400000).length} active deadline{pendingTasks.filter(t => getExactDiffMs(t, currentTime) <= 2 * 86400000).length === 1 ? "" : "s"}
                       </span>{" "}
                       are currently tracked.
@@ -1383,7 +1015,7 @@ export default function DashboardPage() {
                           </defs>
                         </svg>
                         <div className="absolute inset-0 flex flex-col items-center justify-center text-center mt-1">
-                          <span className="aksara-serif text-[2.2rem] font-bold text-[#83103e] leading-none">{summary.completionRate}%</span>
+                          <span className="aksara-serif text-[2.2rem] font-bold text-maroon leading-none">{summary.completionRate}%</span>
                           <span className="text-[11px] text-[#9e8b93] font-bold uppercase tracking-wider mt-1.5">Finished</span>
                         </div>
                       </div>
@@ -1396,7 +1028,7 @@ export default function DashboardPage() {
                     {/* Middle: Focus Time This Week */}
                     <div className="flex flex-col gap-1.5 text-center md:text-left min-w-[14rem]">
                       <span className="text-sm font-bold text-[#9e8b93] tracking-widest uppercase">FOCUS TIME THIS WEEK</span>
-                      <span className="aksara-serif text-[2.8rem] font-bold text-[#83103e] leading-none">
+                      <span className="aksara-serif text-[2.8rem] font-bold text-maroon leading-none">
                         {weeklyFocusStats.hours}h {weeklyFocusStats.minutes}m
                       </span>
                       <p className="text-xs text-[#9e8b93] font-semibold mt-1">Accumulated from Pomodoro sessions</p>
@@ -1408,12 +1040,12 @@ export default function DashboardPage() {
                         {velocityData.map((bar, i) => (
                           <div
                             key={i}
-                            className="w-full bg-[#83103e]/30 hover:bg-[#83103e]/70 rounded-t-sm transition-all duration-300 relative group"
+                            className="w-full bg-maroon/30 hover:bg-maroon/70 rounded-t-sm transition-all duration-300 relative group"
                             style={{ height: `${bar.pct}%` }}
                             title={bar.label}
                           >
                             {/* Hover Tooltip showing task count */}
-                            <span className="absolute bottom-full mb-1.5 left-1/2 -translate-x-1/2 text-[10px] font-bold text-[#83103e] bg-white border border-[#ddbfc4]/30 px-1.5 py-0.5 rounded shadow-sm opacity-0 group-hover:opacity-100 transition-opacity z-10 whitespace-nowrap pointer-events-none">
+                            <span className="absolute bottom-full mb-1.5 left-1/2 -translate-x-1/2 text-[10px] font-bold text-maroon bg-white border border-[#ddbfc4]/30 px-1.5 py-0.5 rounded shadow-sm opacity-0 group-hover:opacity-100 transition-opacity z-10 whitespace-nowrap pointer-events-none">
                               {bar.count} task{bar.count === 1 ? "" : "s"}
                             </span>
                           </div>
@@ -1427,7 +1059,7 @@ export default function DashboardPage() {
                 <article id="dashboard-courses" className="aksara-card px-7 py-6">
                   <div className="flex items-start justify-between gap-6">
                     <div>
-                      <p className="aksara-mono text-[0.64rem] text-[#b24e72]">
+                      <p className="aksara-mono text-[0.64rem] text-maroon-soft">
                         Course overview
                       </p>
                       <h2 className="mt-3 text-[2.35rem] font-semibold leading-none text-[#291920]">
@@ -1465,13 +1097,13 @@ export default function DashboardPage() {
                 <article id="dashboard-tasks" className="aksara-card px-7 py-6">
                   <div className="flex items-start justify-between gap-6">
                     <div>
-                      <p className="aksara-mono text-[0.64rem] text-[#b24e72]">
+                      <p className="aksara-mono text-[0.64rem] text-maroon-soft">
                         Sprint board
                       </p>
-                      <h2 className="aksara-serif mt-3 text-[3.9rem] leading-[0.88] tracking-[-0.04em] text-[#26171e]">
+                      <h2 className="aksara-serif mt-3 text-[3.9rem] leading-[0.88] tracking-[-0.04em] text-ink">
                         Live
                         <br />
-                        <span className="italic text-[#9b174b]">
+                        <span className="italic text-maroon-bright">
                           commitments
                         </span>
                       </h2>
@@ -1552,18 +1184,20 @@ export default function DashboardPage() {
                                   setTaskToEdit(task);
                                   setIsModalOpen(true);
                                 }}
-                                className="text-[#9b8790] hover:text-[#83103e] transition-colors p-1"
+                                className="text-[#9b8790] hover:text-maroon transition-colors p-1"
                                 title="Edit Task"
+                                aria-label="Edit task"
                               >
                                 <Pencil className="size-4.5" />
                               </button>
                               <button
                                 type="button"
                                 onClick={() => handleToggle(task.id, task.completed)}
+                                aria-label={task.completed ? "Mark task incomplete" : "Mark task complete"}
                                 className={`flex size-[1.35rem] items-center justify-center rounded-[0.4rem] border-[2.5px] transition-colors ${
                                   task.completed 
-                                    ? "border-[#83103e] bg-[#83103e] text-white" 
-                                    : "border-[#dcc9cf] bg-white hover:border-[#83103e]"
+                                    ? "border-maroon bg-maroon text-white" 
+                                    : "border-[#dcc9cf] bg-white hover:border-maroon"
                                 }`}
                               >
                                 {task.completed && (
@@ -1577,9 +1211,7 @@ export default function DashboardPage() {
                         ))
                       ) : (
                         <div className="px-2 py-6 text-lg text-[#7d6872]">
-                            {isLoading
-                              ? "Loading tasks..."
-                              : "No tasks match this filter."}
+                          No tasks match this filter.
                         </div>
                       )}
                     </div>
@@ -1601,14 +1233,14 @@ export default function DashboardPage() {
 
                 <article className="aksara-card p-7">
                   <div className="flex items-center justify-between">
-                    <p className="aksara-mono text-[0.64rem] text-[#b24e72]">
+                    <p className="aksara-mono text-[0.64rem] text-maroon-soft">
                       Up next
                     </p>
-                    <p className="text-sm font-semibold text-[#a31657]">
+                    <p className="text-sm font-semibold text-maroon-bright">
                       {timelineTasks.length} item{timelineTasks.length === 1 ? "" : "s"}
                     </p>
                   </div>
-                  <h2 className="aksara-serif mt-2 text-[3.25rem] leading-none text-[#26171e]">
+                  <h2 className="aksara-serif mt-2 text-[3.25rem] leading-none text-ink">
                     Timeline
                   </h2>
 
@@ -1629,7 +1261,7 @@ export default function DashboardPage() {
                             className="grid grid-cols-[4.5rem_1fr] gap-4"
                           >
                             <div className="pt-2 text-center">
-                              <p className="text-[2rem] font-semibold leading-none text-[#b22c67]">
+                              <p className="text-[2rem] font-semibold leading-none text-maroon-bright">
                                 {taskDate.getDate()}
                               </p>
                               <p className="aksara-mono mt-2 text-[0.56rem] text-[#9f8b93]">
@@ -1638,11 +1270,11 @@ export default function DashboardPage() {
                             </div>
                             <div>
                               <div className="flex items-center gap-3">
-                                <span className="size-3 rounded-full bg-[#e2a22f] shadow-[0_0_0_5px_rgba(226,162,47,0.18)]" />
-                                <h3 className="aksara-serif text-[2.2rem] leading-none text-[#26171e]">
+                                <span className="size-3 rounded-full bg-gold shadow-[0_0_0_5px_rgba(226,162,47,0.18)]" />
+                                <h3 className="aksara-serif text-[2.2rem] leading-none text-ink">
                                   {relativeHeading}
                                 </h3>
-                                <span className="text-sm text-[#8f7881]">
+                                <span className="text-sm text-ink-soft">
                                   {formatMonthShort(taskDate)}
                                 </span>
                               </div>
@@ -1683,9 +1315,7 @@ export default function DashboardPage() {
                       })
                     ) : (
                       <p className="text-base text-[#7d6872]">
-                        {isLoading
-                          ? "Looking up upcoming tasks..."
-                          : "No upcoming tasks found."}
+                        No upcoming tasks found.
                       </p>
                     )}
                   </div>
@@ -1698,13 +1328,13 @@ export default function DashboardPage() {
                 <section className="grid grid-cols-[minmax(0,1fr)_24rem] gap-7">
                   <div className="space-y-7">
                     <article className="aksara-card px-8 py-7">
-                      <p className="aksara-mono text-[0.64rem] text-[#b24e72]">
+                      <p className="aksara-mono text-[0.64rem] text-maroon-soft">
                         Calendar
                       </p>
-                      <h1 className="aksara-serif mt-3 text-[4.8rem] leading-none text-[#26171e]">
+                      <h1 className="aksara-serif mt-3 text-[4.8rem] leading-none text-ink">
                         Live month
                       </h1>
-                      <p className="mt-4 max-w-[44rem] text-xl leading-8 text-[#6f5b64]">
+                      <p className="mt-4 max-w-[44rem] text-xl leading-8 text-ink-muted">
                         Hover or focus any marked date to see the tasks due that day.
                       </p>
                     </article>
@@ -1719,10 +1349,10 @@ export default function DashboardPage() {
                   </div>
 
                   <aside className="aksara-card p-7">
-                    <p className="aksara-mono text-[0.64rem] text-[#b24e72]">
+                    <p className="aksara-mono text-[0.64rem] text-maroon-soft">
                       This month
                     </p>
-                    <h2 className="aksara-serif mt-2 text-[3.1rem] leading-none text-[#26171e]">
+                    <h2 className="aksara-serif mt-2 text-[3.1rem] leading-none text-ink">
                       Due dates
                     </h2>
                     <div className="mt-6 space-y-4">
@@ -1760,10 +1390,10 @@ export default function DashboardPage() {
                 <article className="aksara-card px-8 py-7">
                   <div className="flex items-start justify-between gap-6">
                     <div>
-                      <p className="aksara-mono text-[0.64rem] text-[#b24e72]">
+                      <p className="aksara-mono text-[0.64rem] text-maroon-soft">
                         Task list
                       </p>
-                      <h1 className="aksara-serif mt-3 text-[4.6rem] leading-none text-[#26171e]">
+                      <h1 className="aksara-serif mt-3 text-[4.6rem] leading-none text-ink">
                         Live commitments
                       </h1>
                     </div>
@@ -1845,18 +1475,20 @@ export default function DashboardPage() {
                                   setTaskToEdit(task);
                                   setIsModalOpen(true);
                                 }}
-                                className="text-[#9b8790] hover:text-[#83103e] transition-colors p-1"
+                                className="text-[#9b8790] hover:text-maroon transition-colors p-1"
                                 title="Edit Task"
+                                aria-label="Edit task"
                               >
                                 <Pencil className="size-4.5" />
                               </button>
                               <button
                                 type="button"
                                 onClick={() => handleToggle(task.id, task.completed)}
+                                aria-label={task.completed ? "Mark task incomplete" : "Mark task complete"}
                                 className={`flex size-[1.35rem] items-center justify-center rounded-[0.4rem] border-[2.5px] transition-colors ${
                                   task.completed 
-                                    ? "border-[#83103e] bg-[#83103e] text-white" 
-                                    : "border-[#dcc9cf] bg-white hover:border-[#83103e]"
+                                    ? "border-maroon bg-maroon text-white" 
+                                    : "border-[#dcc9cf] bg-white hover:border-maroon"
                                 }`}
                               >
                                 {task.completed && (
@@ -1870,9 +1502,7 @@ export default function DashboardPage() {
                         ))
                       ) : (
                         <div className="px-2 py-6 text-lg text-[#7d6872]">
-                          {isLoading
-                            ? "Loading tasks..."
-                            : "No tasks match this filter."}
+                          No tasks match this filter.
                         </div>
                       )}
                     </div>
@@ -1885,13 +1515,13 @@ export default function DashboardPage() {
                   <article className="aksara-card px-8 py-7">
                     <div className="flex items-start justify-between">
                       <div>
-                        <p className="aksara-mono text-[0.64rem] text-[#b24e72]">
+                        <p className="aksara-mono text-[0.64rem] text-maroon-soft">
                           Course overview
                         </p>
-                        <h1 className="aksara-serif mt-3 text-[4.6rem] leading-none text-[#26171e]">
+                        <h1 className="aksara-serif mt-3 text-[4.6rem] leading-none text-ink">
                           {courseCards.length} courses
                         </h1>
-                        <p className="mt-4 max-w-[44rem] text-xl leading-8 text-[#6f5b64]">
+                        <p className="mt-4 max-w-[44rem] text-xl leading-8 text-ink-muted">
                           A list of every course currently tracked.
                         </p>
                       </div>
@@ -1925,8 +1555,8 @@ export default function DashboardPage() {
                 </section>
               ) : null}
 
-              {desktopView === "focus" ? (
-                <FocusTimerView tasks={tasks} courses={courses} focusLogs={focusLogs} onRefresh={loadSheetData} />
+              {desktopView === "focus" && isDesktop ? (
+                <FocusTimerView tasks={tasks} courses={courses} focusLogs={focusLogs} onRefresh={refresh} />
               ) : null}
             </div>
           </div>
@@ -1939,7 +1569,7 @@ export default function DashboardPage() {
             <section>
               <MobileTopBar
                 meta={syncLabel}
-                title="Hello"
+                title={greetingLabel}
                 accent={`${userProfile?.name || "Student"}.`}
                 userProfile={userProfile}
                 onOpenSettings={() => setIsSettingsOpen(true)}
@@ -1948,7 +1578,7 @@ export default function DashboardPage() {
 
               <article className="aksara-card mt-8 px-6 py-5">
                 <div className="flex items-center justify-between gap-4">
-                  <p className="aksara-mono text-[0.58rem] text-[#b24e72]">
+                  <p className="aksara-mono text-[0.58rem] text-maroon-soft">
                     Next deadline
                   </p>
                   <p className="aksara-mono text-[0.58rem] text-[#9f8b93]">
@@ -1967,7 +1597,7 @@ export default function DashboardPage() {
                 </div>
                 <div className="mt-5 h-2.5 rounded-full bg-[#f2e1d8]">
                   <div
-                    className="h-2.5 rounded-full bg-gradient-to-r from-[#d9a130] to-[#9e2555]"
+                    className="h-2.5 rounded-full bg-gradient-to-r from-[#d9a130] to-maroon-bright"
                     style={{
                       width: `${Math.min(
                         100,
@@ -1986,14 +1616,14 @@ export default function DashboardPage() {
 
               <article className="aksara-card mt-5 px-6 py-5">
                 <div className="flex items-center justify-between gap-4">
-                  <p className="aksara-mono text-[0.58rem] text-[#b24e72]">
+                  <p className="aksara-mono text-[0.58rem] text-maroon-soft">
                     Workspace summary
                   </p>
                   <p className="text-sm text-[#8d7880]">{summary.total} total</p>
                 </div>
                 <div className="mt-5 grid grid-cols-4 gap-3 text-center">
                   <div>
-                    <p className="text-[2.15rem] font-semibold text-[#a31657]">
+                    <p className="text-[2.15rem] font-semibold text-maroon-bright">
                       {summary.urgent}
                     </p>
                     <p className="aksara-mono mt-1 text-[0.5rem] text-[#99848d]">
@@ -2052,10 +1682,10 @@ export default function DashboardPage() {
 
               <div className="mt-5 space-y-4">
                 <div>
-                  <p className="aksara-mono text-[0.58rem] text-[#b24e72]">
+                  <p className="aksara-mono text-[0.58rem] text-maroon-soft">
                     Today
                   </p>
-                  <h2 className="aksara-serif mt-2 text-[2.4rem] leading-none text-[#26171e]">
+                  <h2 className="aksara-serif mt-2 text-[2.4rem] leading-none text-ink">
                     Today&apos;s deadlines
                   </h2>
                 </div>
@@ -2076,10 +1706,10 @@ export default function DashboardPage() {
                 )}
 
                 <div>
-                  <p className="aksara-mono text-[0.58rem] text-[#b24e72]">
+                  <p className="aksara-mono text-[0.58rem] text-maroon-soft">
                     This week
                   </p>
-                  <h2 className="aksara-serif mt-2 text-[2.2rem] leading-none text-[#26171e]">
+                  <h2 className="aksara-serif mt-2 text-[2.2rem] leading-none text-ink">
                     Upcoming deadlines
                   </h2>
                 </div>
@@ -2100,7 +1730,7 @@ export default function DashboardPage() {
             <section>
               <div className="flex items-end justify-between gap-4">
                 <MobileTopBar
-                  meta="Aksara OS tasks"
+                  meta="Academic OS / Tasks"
                   title="All"
                   accent="tasks."
                   userProfile={userProfile}
@@ -2120,7 +1750,7 @@ export default function DashboardPage() {
               <article className="aksara-card mt-7 px-5 py-4">
                 <div className="grid grid-cols-3 divide-x divide-[#edd9de] text-center">
                   <div>
-                    <p className="text-[2.15rem] font-semibold text-[#a31657]">
+                    <p className="text-[2.15rem] font-semibold text-maroon-bright">
                       {summary.pending}
                     </p>
                     <p className="aksara-mono mt-1 text-[0.5rem] text-[#99848d]">
@@ -2176,9 +1806,7 @@ export default function DashboardPage() {
                   ))
                 ) : (
                   <article className="aksara-card rounded-[1.8rem] px-5 py-5 text-[#7d6872]">
-                    {isLoading
-                      ? "Loading tasks from database..."
-                      : "No tasks match this filter."}
+                    No tasks match this filter.
                   </article>
                 )}
               </div>
@@ -2189,7 +1817,7 @@ export default function DashboardPage() {
             <section>
               <div className="flex items-end justify-between gap-4">
                 <MobileTopBar
-                  meta="Aksara OS courses"
+                  meta="Academic OS / Courses"
                   title="Your"
                   accent="courses."
                   userProfile={userProfile}
@@ -2208,7 +1836,7 @@ export default function DashboardPage() {
 
               <article className="aksara-card mt-7 px-6 py-5">
                 <div className="flex items-center justify-between gap-4">
-                  <p className="aksara-mono text-[0.58rem] text-[#b24e72]">
+                  <p className="aksara-mono text-[0.58rem] text-maroon-soft">
                     Enrolled
                   </p>
                   <p className="text-sm text-[#8d7880]">{courseCards.length} courses</p>
@@ -2249,7 +1877,9 @@ export default function DashboardPage() {
                 onLogout={handleLogout}
               />
               <div className="mt-7">
-                <FocusTimerView tasks={tasks} courses={courses} focusLogs={focusLogs} onRefresh={loadSheetData} />
+                {!isDesktop ? (
+                  <FocusTimerView tasks={tasks} courses={courses} focusLogs={focusLogs} onRefresh={refresh} />
+                ) : null}
               </div>
             </section>
           ) : null}
@@ -2268,7 +1898,7 @@ export default function DashboardPage() {
                     type="button"
                     onClick={() => handleDesktopNavigation(item.key)}
                     className={`flex flex-col items-center gap-1 rounded-[0.85rem] px-0.5 py-2 text-[9px] font-semibold tracking-tight ${
-                      active ? "text-[#a31657]" : "text-[#96838c]"
+                      active ? "text-maroon-bright" : "text-[#96838c]"
                     }`}
                   >
                     <Icon className="size-[1.1rem]" />

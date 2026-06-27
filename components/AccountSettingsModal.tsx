@@ -2,6 +2,7 @@
 
 import { useState, useEffect } from "react";
 import { updateProfile } from "@/app/actions";
+import { useEscapeKey } from "@/lib/useEscapeKey";
 
 export function AccountSettingsModal({
   isOpen,
@@ -29,6 +30,8 @@ export function AccountSettingsModal({
     }
   }, [isOpen, userProfile]);
 
+  useEscapeKey(onClose, isOpen);
+
   if (!isOpen) return null;
 
   async function handleSubmit(formData: FormData) {
@@ -49,14 +52,23 @@ export function AccountSettingsModal({
   }
 
   return (
-    <div className="fixed inset-0 z-50 flex items-center justify-center bg-[#2a1820]/50 p-4 backdrop-blur-sm">
-      <div className="aksara-card w-full max-w-md p-8">
-        <h2 className="aksara-serif text-3xl font-semibold mb-6 text-[#26171e]">
+    <div
+      className="fixed inset-0 z-50 flex items-center justify-center bg-[#2a1820]/50 p-4 backdrop-blur-sm"
+      onClick={onClose}
+    >
+      <div
+        role="dialog"
+        aria-modal="true"
+        aria-label="Account settings"
+        className="aksara-card w-full max-w-md p-8"
+        onClick={(e) => e.stopPropagation()}
+      >
+        <h2 className="aksara-serif text-3xl font-semibold mb-6 text-ink">
           Account Settings
         </h2>
         <form action={handleSubmit} className="space-y-4">
           <div>
-            <label className="block text-sm font-semibold mb-1 text-[#8f7881]">Email (Read-only)</label>
+            <label className="block text-sm font-semibold mb-1 text-ink-soft">Email (Read-only)</label>
             <input
               disabled
               value={userProfile?.email || ""}
@@ -65,42 +77,42 @@ export function AccountSettingsModal({
           </div>
           <div className="grid grid-cols-2 gap-4">
             <div>
-              <label className="block text-sm font-semibold mb-1 text-[#8f7881]">First Name</label>
+              <label className="block text-sm font-semibold mb-1 text-ink-soft">First Name</label>
               <input
                 required
                 name="firstName"
                 value={firstName}
                 onChange={(e) => setFirstName(e.target.value)}
                 placeholder="Jobayer"
-                className="w-full border border-[#ecd9de] rounded-[0.85rem] px-4 py-3 outline-none focus:border-[#a31657]"
+                className="w-full border border-[#ecd9de] rounded-[0.85rem] px-4 py-3 outline-none focus:border-maroon-bright"
               />
             </div>
             <div>
-              <label className="block text-sm font-semibold mb-1 text-[#8f7881]">Last Name</label>
+              <label className="block text-sm font-semibold mb-1 text-ink-soft">Last Name</label>
               <input
                 required
                 name="lastName"
                 value={lastName}
                 onChange={(e) => setLastName(e.target.value)}
                 placeholder="Alam"
-                className="w-full border border-[#ecd9de] rounded-[0.85rem] px-4 py-3 outline-none focus:border-[#a31657]"
+                className="w-full border border-[#ecd9de] rounded-[0.85rem] px-4 py-3 outline-none focus:border-maroon-bright"
               />
             </div>
           </div>
           <div>
-            <label className="block text-sm font-semibold mb-1 text-[#8f7881]">New Password (Optional)</label>
+            <label className="block text-sm font-semibold mb-1 text-ink-soft">New Password (Optional)</label>
             <input
               type="password"
               name="password"
               value={password}
               onChange={(e) => setPassword(e.target.value)}
               placeholder="Min 6 characters to change"
-              className="w-full border border-[#ecd9de] rounded-[0.85rem] px-4 py-3 outline-none focus:border-[#a31657]"
+              className="w-full border border-[#ecd9de] rounded-[0.85rem] px-4 py-3 outline-none focus:border-maroon-bright"
             />
           </div>
 
           {error && (
-            <p className="text-sm font-semibold text-[#a31657]">
+            <p className="text-sm font-semibold text-maroon-bright">
               {error}
             </p>
           )}
@@ -115,7 +127,7 @@ export function AccountSettingsModal({
             <button
               type="button"
               onClick={onClose}
-              className="px-5 py-3 font-semibold text-[#8f7881] hover:text-[#26171e] transition rounded-[0.85rem]"
+              className="px-5 py-3 font-semibold text-ink-soft hover:text-ink transition rounded-[0.85rem]"
             >
               Cancel
             </button>

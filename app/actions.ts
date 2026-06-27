@@ -3,7 +3,9 @@
 import { createClient } from "@/lib/supabase/server";
 import { revalidatePath } from "next/cache";
 
-const ADMIN_EMAIL = "alam.j@graduate.utm.my";
+// The account that owns shared/public courses and tasks. Configured via env so
+// no personal address is baked into the source.
+const ADMIN_EMAIL = process.env.ADMIN_EMAIL;
 
 export async function toggleTaskCompletion(taskId: string, isCompleted: boolean) {
   const supabase = await createClient();
@@ -344,12 +346,15 @@ export async function updateProfile(formData: FormData) {
     throw new Error("First Name and Last Name are required");
   }
 
-  const updateData: any = {
+  const updateData: {
+    data: { first_name: string; last_name: string; full_name: string };
+    password?: string;
+  } = {
     data: {
       first_name: firstName,
       last_name: lastName,
       full_name: `${firstName} ${lastName}`.trim(),
-    }
+    },
   };
 
   if (password && password.trim().length >= 6) {

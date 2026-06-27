@@ -26,7 +26,7 @@ const uiMono = IBM_Plex_Mono({
 });
 
 export const metadata: Metadata = {
-  title: "Aksara Academic OS",
+  title: "Aksara — Academic OS",
   description:
     "A refined academic planning dashboard for schedules, coursework, and deadlines.",
 };

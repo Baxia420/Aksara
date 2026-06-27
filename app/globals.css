@@ -7,14 +7,23 @@
   --paper-strong: #fffaf6;
   --border: rgba(155, 112, 122, 0.2);
   --shadow: 0 24px 60px rgba(131, 16, 62, 0.08);
-  --maroon: #83103e;
-  --maroon-deep: #57102b;
-  --maroon-soft: #b34973;
+
+  /* Brand maroons */
+  --maroon: #83103e; /* primary brand */
+  --maroon-bright: #a31657; /* accents, active states, links */
+  --maroon-deep: #57102b; /* hover / pressed */
+  --maroon-soft: #b24e72; /* mono labels, soft accents */
+
+  /* Gold */
   --gold: #e2a22f;
   --gold-soft: rgba(226, 162, 47, 0.24);
   --rose-wash: rgba(188, 124, 147, 0.17);
-  --ink-muted: #6f5b64;
-  --ink-soft: #938089;
+
+  /* Ink (text) scale */
+  --ink: #26171e; /* headings */
+  --ink-body: #5d4d55; /* body copy */
+  --ink-muted: #6f5b64; /* secondary text */
+  --ink-soft: #80707a; /* tertiary / faint labels (contrast-bumped) */
 }
 
 @theme inline {
@@ -22,6 +31,16 @@
   --color-foreground: var(--foreground);
   --font-sans: var(--font-body);
   --font-mono: var(--font-ui-mono);
+
+  --color-maroon: var(--maroon);
+  --color-maroon-bright: var(--maroon-bright);
+  --color-maroon-deep: var(--maroon-deep);
+  --color-maroon-soft: var(--maroon-soft);
+  --color-gold: var(--gold);
+  --color-ink: var(--ink);
+  --color-ink-body: var(--ink-body);
+  --color-ink-muted: var(--ink-muted);
+  --color-ink-soft: var(--ink-soft);
 }
 
 * {

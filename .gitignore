@@ -38,6 +38,9 @@ dev.err
 # env files (can opt-in for committing if needed)
 .env*
 
+# local tooling
+.claude/
+
 # vercel
 .vercel
 

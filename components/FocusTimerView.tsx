@@ -16,37 +16,10 @@ import {
   BarChart2,
 } from "lucide-react";
 import { logFocusSession } from "@/app/actions";
+import { coursePillClasses, courseBarColors } from "@/lib/courseTheme";
+import type { AcademicCourse, AcademicTask, FocusLog } from "@/lib/types";
 
 // ─── Types ───────────────────────────────────────────────────────────────────
-
-type AcademicTask = {
-  id: string;
-  completed: boolean;
-  courseCode: string;
-  courseDisplay: string;
-  courseTitle: string;
-  daysRemaining: number;
-  dueDateIso: string;
-  dueTime: string;
-  title: string;
-  type: string;
-};
-
-type AcademicCourse = {
-  id: string;
-  code: string;
-  title: string;
-  colorIndex: number;
-};
-
-type FocusLog = {
-  id: string;
-  userId: string;
-  taskId: string | null;
-  duration: number;
-  type: "focus" | "shortBreak" | "longBreak";
-  createdAt: string;
-};
 
 type FocusTimerViewProps = {
   tasks: AcademicTask[];
@@ -74,24 +47,9 @@ const MODE_LABELS: Record<TimerMode, string> = {
 // Day labels — unambiguous two-char abbreviations
 const DAY_LABELS = ["Mo", "Tu", "We", "Th", "Fr", "Sa", "Su"];
 
-// Course color palettes (mirrors dashboard/page.tsx)
-const COURSE_PILL_CLASSES = [
-  "border-[#dfb1c1] bg-[#fff7fa] text-[#9f4568]",
-  "border-[#eac08a] bg-[#fffaf1] text-[#b87b26]",
-  "border-[#a2c7eb] bg-[#f4fbff] text-[#467db6]",
-  "border-[#b9c8ec] bg-[#f5f8ff] text-[#5d75b3]",
-  "border-[#d7cfb7] bg-[#fcfbf5] text-[#7e6f3f]",
-  "border-[#f1d5a2] bg-[#fff8ec] text-[#ad7d1c]",
-];
-
-const COURSE_BAR_COLORS = [
-  "bg-[#c4607e]",
-  "bg-[#d89c45]",
-  "bg-[#4e8db5]",
-  "bg-[#6279b8]",
-  "bg-[#8c7d46]",
-  "bg-[#c08f2a]",
-];
+// Course color palettes (single source of truth in lib/courseTheme).
+const COURSE_PILL_CLASSES = coursePillClasses;
+const COURSE_BAR_COLORS = courseBarColors;
 
 // ─── Helpers ─────────────────────────────────────────────────────────────────
 
@@ -442,7 +400,7 @@ export function FocusTimerView({
       <div className="lg:col-span-8 flex flex-col gap-4">
         <article className="aksara-card rounded-[2rem] p-5 pt-7 md:p-12 flex flex-col items-center justify-center relative">
           {/* Decorative blur */}
-          <div className="absolute top-1/2 left-1/2 -translate-x-1/2 -translate-y-1/2 w-64 h-64 bg-[#83103e]/4 rounded-full blur-3xl z-0 pointer-events-none" />
+          <div className="absolute top-1/2 left-1/2 -translate-x-1/2 -translate-y-1/2 w-64 h-64 bg-maroon/4 rounded-full blur-3xl z-0 pointer-events-none" />
 
           {/* Mode selectors */}
           <div className="flex flex-wrap justify-center gap-2 bg-[#f4ede7]/60 p-1.5 rounded-2xl backdrop-blur-md border border-[#ddbfc4]/30 z-10 mb-8 w-full max-w-sm">
@@ -452,8 +410,8 @@ export function FocusTimerView({
                 onClick={() => handleModeChange(mode)}
                 className={`flex-1 min-w-[6rem] px-3 py-2 text-xs font-semibold rounded-xl transition-all duration-200 ${
                   timerMode === mode
-                    ? "bg-white text-[#83103e] shadow-[0_4px_12px_rgba(131,16,62,0.06)]"
-                    : "text-[#6f5b64] hover:bg-white/40"
+                    ? "bg-white text-maroon shadow-[0_4px_12px_rgba(131,16,62,0.06)]"
+                    : "text-ink-muted hover:bg-white/40"
                 }`}
               >
                 {mode === "focus" && "Focus (25m)"}
@@ -479,7 +437,7 @@ export function FocusTimerView({
                 strokeWidth="2.5"
               />
               <circle
-                className="text-[#83103e] progress-ring__circle"
+                className="text-maroon progress-ring__circle"
                 cx="50"
                 cy="50"
                 fill="none"
@@ -492,7 +450,7 @@ export function FocusTimerView({
               />
             </svg>
             <div className="flex flex-col items-center justify-center">
-              <span className="text-[0.68rem] font-bold text-[#b24e72] tracking-[0.22em] uppercase mb-2">
+              <span className="text-[0.68rem] font-bold text-maroon-soft tracking-[0.22em] uppercase mb-2">
                 {MODE_LABELS[timerMode]}
               </span>
               <span className="aksara-serif text-[#2c1d24] text-[4.4rem] font-bold leading-none tracking-tight">
@@ -505,7 +463,7 @@ export function FocusTimerView({
           <div className="flex items-center gap-5 z-10 mb-8">
             <button
               onClick={handleReset}
-              className="w-12 h-12 rounded-full border border-[#ddbfc4]/40 text-[#6f5b64] flex items-center justify-center hover:bg-[#fffaf6]/70 transition-all active:scale-95 shadow-sm"
+              className="w-12 h-12 rounded-full border border-[#ddbfc4]/40 text-ink-muted flex items-center justify-center hover:bg-[#fffaf6]/70 transition-all active:scale-95 shadow-sm"
               title="Reset Timer"
             >
               <RotateCcw className="size-4.5" />
@@ -525,7 +483,7 @@ export function FocusTimerView({
 
             <button
               onClick={handleSkip}
-              className="w-12 h-12 rounded-full border border-[#ddbfc4]/40 text-[#6f5b64] flex items-center justify-center hover:bg-[#fffaf6]/70 transition-all active:scale-95 shadow-sm"
+              className="w-12 h-12 rounded-full border border-[#ddbfc4]/40 text-ink-muted flex items-center justify-center hover:bg-[#fffaf6]/70 transition-all active:scale-95 shadow-sm"
               title="Skip Session"
             >
               <SkipForward className="size-4.5" />
@@ -540,17 +498,17 @@ export function FocusTimerView({
             <div className="relative">
               <button
                 onClick={() => setIsDropdownOpen(!isDropdownOpen)}
-                className="w-full flex items-center justify-between px-5 py-4 rounded-xl border border-[#ddbfc4]/40 bg-[#fffaf6]/90 hover:border-[#83103e]/40 transition-colors text-left group"
+                className="w-full flex items-center justify-between px-5 py-4 rounded-xl border border-[#ddbfc4]/40 bg-[#fffaf6]/90 hover:border-maroon/40 transition-colors text-left group"
               >
                 <div className="flex items-center gap-3 truncate">
-                  <BookOpen className="size-4.5 text-[#83103e] shrink-0" />
+                  <BookOpen className="size-4.5 text-maroon shrink-0" />
                   <span className="text-base text-[#2c1d24] truncate">
                     {selectedTask
                       ? `${selectedTask.courseCode} — ${selectedTask.title}`
                       : "Select a task..."}
                   </span>
                 </div>
-                <ChevronDown className="size-4.5 text-[#9e8b93] group-hover:text-[#83103e] transition-colors shrink-0" />
+                <ChevronDown className="size-4.5 text-[#9e8b93] group-hover:text-maroon transition-colors shrink-0" />
               </button>
 
               {isDropdownOpen && (
@@ -567,16 +525,16 @@ export function FocusTimerView({
                           setSelectedTaskId(t.id);
                           setIsDropdownOpen(false);
                         }}
-                        className={`w-full text-left px-5 py-3 text-sm hover:bg-[#83103e]/5 transition-colors border-b border-[#ddbfc4]/10 last:border-none flex items-center justify-between ${
+                        className={`w-full text-left px-5 py-3 text-sm hover:bg-maroon/5 transition-colors border-b border-[#ddbfc4]/10 last:border-none flex items-center justify-between ${
                           selectedTaskId === t.id
-                            ? "text-[#83103e] font-semibold bg-[#83103e]/3"
-                            : "text-[#5d4d55]"
+                            ? "text-maroon font-semibold bg-maroon/3"
+                            : "text-ink-body"
                         }`}
                       >
                         <span className="truncate">
                           {t.courseCode} — {t.title}
                         </span>
-                        <span className="text-xs uppercase tracking-wider font-semibold text-[#b34973] ml-2 shrink-0">
+                        <span className="text-xs uppercase tracking-wider font-semibold text-maroon-soft ml-2 shrink-0">
                           {t.type}
                         </span>
                       </button>
@@ -608,14 +566,14 @@ export function FocusTimerView({
                 <span className="text-[0.64rem] font-semibold text-[#9e8b93] tracking-widest uppercase">
                   Total Focus Time
                 </span>
-                <span className="aksara-serif text-[1.6rem] font-bold text-[#83103e] leading-none">
+                <span className="aksara-serif text-[1.6rem] font-bold text-maroon leading-none">
                   {todayFocusHours > 0 ? `${todayFocusHours}h ` : ""}
                   {todayFocusMinutes}m
                 </span>
               </div>
               <div className="w-full h-1 bg-[#ddbfc4]/30 rounded-full overflow-hidden">
                 <div
-                  className="h-full bg-gradient-to-r from-[#83103e] to-[#e2a22f] rounded-full transition-all duration-500"
+                  className="h-full bg-gradient-to-r from-maroon to-gold rounded-full transition-all duration-500"
                   style={{ width: `${progressPercent}%` }}
                 />
               </div>
@@ -636,7 +594,7 @@ export function FocusTimerView({
                     key={`focus-dot-${i}`}
                     className={`w-3.5 h-3.5 rounded-full transition-colors ${
                       i < completedFocus
-                        ? "bg-[#83103e] shadow-[0_0_8px_rgba(131,16,62,0.4)]"
+                        ? "bg-maroon shadow-[0_0_8px_rgba(131,16,62,0.4)]"
                         : "bg-[#ddbfc4]/30 border border-[#ddbfc4]/60"
                     }`}
                   />
@@ -646,7 +604,7 @@ export function FocusTimerView({
                     key={`break-dot-${i}`}
                     className={`w-3.5 h-3.5 rounded-full transition-colors ${
                       i < completedBreaks
-                        ? "bg-[#e2a22f] shadow-[0_0_8px_rgba(226,162,47,0.4)]"
+                        ? "bg-gold shadow-[0_0_8px_rgba(226,162,47,0.4)]"
                         : "bg-[#ddbfc4]/30 border border-[#ddbfc4]/60"
                     }`}
                   />
@@ -673,7 +631,7 @@ export function FocusTimerView({
           <div className="flex items-center justify-between bg-[#f4ede7]/60 rounded-xl px-3 py-2 border border-[#ddbfc4]/25">
             <button
               onClick={() => setWeekOffset((o) => o - 1)}
-              className="w-7 h-7 rounded-lg flex items-center justify-center text-[#6f5b64] hover:bg-white/70 hover:text-[#83103e] transition-all"
+              className="w-7 h-7 rounded-lg flex items-center justify-center text-ink-muted hover:bg-white/70 hover:text-maroon transition-all"
               title="Previous week"
             >
               <ChevronLeft className="size-3.5" />
@@ -684,7 +642,7 @@ export function FocusTimerView({
             <button
               onClick={() => setWeekOffset((o) => o + 1)}
               disabled={isCurrentWeek}
-              className="w-7 h-7 rounded-lg flex items-center justify-center text-[#6f5b64] hover:bg-white/70 hover:text-[#83103e] transition-all disabled:opacity-30 disabled:cursor-not-allowed disabled:hover:bg-transparent disabled:hover:text-[#6f5b64]"
+              className="w-7 h-7 rounded-lg flex items-center justify-center text-ink-muted hover:bg-white/70 hover:text-maroon transition-all disabled:opacity-30 disabled:cursor-not-allowed disabled:hover:bg-transparent disabled:hover:text-ink-muted"
               title="Next week"
             >
               <ChevronRight className="size-3.5" />
@@ -699,17 +657,17 @@ export function FocusTimerView({
                 className="flex-1 flex flex-col items-center h-full justify-end relative group"
               >
                 {/* Tooltip */}
-                <span className="absolute bottom-full mb-1 text-[10px] font-bold text-[#83103e] opacity-0 group-hover:opacity-100 transition-opacity bg-white/90 border border-[#ddbfc4]/30 px-1.5 py-0.5 rounded shadow-sm z-10 whitespace-nowrap">
+                <span className="absolute bottom-full mb-1 text-[10px] font-bold text-maroon opacity-0 group-hover:opacity-100 transition-opacity bg-white/90 border border-[#ddbfc4]/30 px-1.5 py-0.5 rounded shadow-sm z-10 whitespace-nowrap">
                   {bar.val}h
                 </span>
                 {/* Bar */}
                 <div
                   className={`w-full rounded-t-[4px] transition-all duration-300 ${
                     bar.isToday
-                      ? "bg-[#83103e] shadow-[0_0_12px_rgba(131,16,62,0.2)]"
+                      ? "bg-maroon shadow-[0_0_12px_rgba(131,16,62,0.2)]"
                       : bar.isFuture && isCurrentWeek
                       ? "bg-[#ddbfc4]/20 border border-dashed border-[#ddbfc4]/40"
-                      : "bg-[#ddbfc4]/40 hover:bg-[#83103e]/40"
+                      : "bg-[#ddbfc4]/40 hover:bg-maroon/40"
                   }`}
                   style={{ height: `${bar.pct}%` }}
                 />
@@ -723,7 +681,7 @@ export function FocusTimerView({
               <span
                 key={i}
                 className={
-                  weeklyTrendData[i]?.isToday ? "text-[#83103e]" : undefined
+                  weeklyTrendData[i]?.isToday ? "text-maroon" : undefined
                 }
               >
                 {d}
@@ -747,7 +705,7 @@ export function FocusTimerView({
             </div>
             {weekTotalMinutes > 0 && (
               <div className="text-right shrink-0">
-                <span className="aksara-serif text-[1.35rem] font-bold text-[#83103e] leading-none">
+                <span className="aksara-serif text-[1.35rem] font-bold text-maroon leading-none">
                   {formatMinutes(weekTotalMinutes)}
                 </span>
                 <p className="text-[0.6rem] text-[#9e8b93] font-semibold uppercase tracking-wide mt-0.5">
@@ -825,7 +783,7 @@ export function FocusTimerView({
                         return (
                           <div key={task.taskId} className="flex flex-col gap-1">
                             <div className="flex items-center justify-between gap-2">
-                              <span className="text-xs text-[#5d4d55] font-medium truncate flex-1 leading-tight">
+                              <span className="text-xs text-ink-body font-medium truncate flex-1 leading-tight">
                                 {task.taskTitle}
                               </span>
                               <span className="text-xs font-semibold text-[#7a6472] shrink-0">
@@ -852,8 +810,8 @@ export function FocusTimerView({
 
         {/* Motivation Card */}
         <article className="aksara-card rounded-[2rem] p-7 relative overflow-hidden bg-gradient-to-br from-[#fffaf6] to-[#ddbfc4]/20 border-none flex items-center min-h-[120px]">
-          <Quote className="absolute -top-3 -left-3 size-20 text-[#e2a22f]/8 rotate-180 pointer-events-none" />
-          <p className="aksara-serif text-lg italic text-[#57102b] leading-relaxed relative z-10 pl-2">
+          <Quote className="absolute -top-3 -left-3 size-20 text-gold/8 rotate-180 pointer-events-none" />
+          <p className="aksara-serif text-lg italic text-maroon-deep leading-relaxed relative z-10 pl-2">
             &ldquo;Focus is a muscle, and you are building it. Keep going.&rdquo;
           </p>
         </article>

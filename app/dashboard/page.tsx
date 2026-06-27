@@ -6,7 +6,6 @@ import { use, useEffect, useMemo, useState, useTransition, useCallback } from "r
 import { toggleTaskCompletion, signOutUser } from "@/app/actions";
 import { AddTaskModal } from "@/components/AddTaskModal";
 import { ManageCoursesModal } from "@/components/ManageCoursesModal";
-import { AccountSettingsModal } from "@/components/AccountSettingsModal";
 import {
   BookOpen,
   CalendarDays,
@@ -426,7 +425,7 @@ function MobileTopBar({
                   }}
                   className="w-full text-left px-4 py-2.5 text-sm font-semibold text-ink-muted hover:bg-maroon/5 hover:text-maroon rounded-xl transition"
                 >
-                  Account Settings
+                  Settings
                 </button>
                 <button
                   onClick={() => {
@@ -514,13 +513,13 @@ export default function DashboardPage() {
   }, [dashboardData]);
 
   const [isProfileOpen, setIsProfileOpen] = useState(false);
-  const [isSettingsOpen, setIsSettingsOpen] = useState(false);
   const [isManageCoursesOpen, setIsManageCoursesOpen] = useState(false);
   const [taskToEdit, setTaskToEdit] = useState<AcademicTask | null>(null);
   const [isModalOpen, setIsModalOpen] = useState(false);
   const [, startTransition] = useTransition();
 
   const refresh = useCallback(() => router.refresh(), [router]);
+  const openSettings = useCallback(() => router.push("/dashboard/settings"), [router]);
 
   const handleLogout = useCallback(async () => {
     try {
@@ -848,7 +847,6 @@ export default function DashboardPage() {
     <main className="min-h-screen px-4 py-4 lg:px-6 lg:py-6">
       <AddTaskModal isOpen={isModalOpen} onClose={() => { setIsModalOpen(false); setTaskToEdit(null); refresh(); }} tasks={tasks} courses={courses} taskToEdit={taskToEdit} />
       <ManageCoursesModal isOpen={isManageCoursesOpen} onClose={() => { setIsManageCoursesOpen(false); refresh(); }} onRefresh={refresh} courses={courses} />
-      <AccountSettingsModal isOpen={isSettingsOpen} onClose={() => { setIsSettingsOpen(false); refresh(); }} userProfile={userProfile} />
       {taskToConfirm && (
         <div
           className="fixed inset-0 z-50 flex items-center justify-center bg-[#2a1820]/50 p-4 backdrop-blur-sm"
@@ -930,11 +928,11 @@ export default function DashboardPage() {
                       <button
                         onClick={() => {
                           setIsProfileOpen(false);
-                          setIsSettingsOpen(true);
+                          openSettings();
                         }}
                         className="w-full text-left px-4 py-2.5 text-sm font-semibold text-ink-muted hover:bg-maroon/5 hover:text-maroon rounded-xl transition"
                       >
-                        Account Settings
+                        Settings
                       </button>
                       <button
                         onClick={handleLogout}
@@ -1572,7 +1570,7 @@ export default function DashboardPage() {
                 title={greetingLabel}
                 accent={`${userProfile?.name || "Student"}.`}
                 userProfile={userProfile}
-                onOpenSettings={() => setIsSettingsOpen(true)}
+                onOpenSettings={openSettings}
                 onLogout={handleLogout}
               />
 
@@ -1665,7 +1663,7 @@ export default function DashboardPage() {
                 meta="Live schedule month"
                 title="Calendar"
                 userProfile={userProfile}
-                onOpenSettings={() => setIsSettingsOpen(true)}
+                onOpenSettings={openSettings}
                 onLogout={handleLogout}
               />
               <div className="mt-7">
@@ -1734,7 +1732,7 @@ export default function DashboardPage() {
                   title="All"
                   accent="tasks."
                   userProfile={userProfile}
-                  onOpenSettings={() => setIsSettingsOpen(true)}
+                  onOpenSettings={openSettings}
                   onLogout={handleLogout}
                 />
                 <button
@@ -1821,7 +1819,7 @@ export default function DashboardPage() {
                   title="Your"
                   accent="courses."
                   userProfile={userProfile}
-                  onOpenSettings={() => setIsSettingsOpen(true)}
+                  onOpenSettings={openSettings}
                   onLogout={handleLogout}
                 />
                 <button
@@ -1873,7 +1871,7 @@ export default function DashboardPage() {
                 title="Focus"
                 accent="timer."
                 userProfile={userProfile}
-                onOpenSettings={() => setIsSettingsOpen(true)}
+                onOpenSettings={openSettings}
                 onLogout={handleLogout}
               />
               <div className="mt-7">

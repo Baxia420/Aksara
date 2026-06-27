@@ -325,6 +325,37 @@ export async function logFocusSession(
   revalidatePath("/dashboard");
 }
 
+export async function updateReminderPreferences(
+  enabled: boolean,
+  leadTimes: number[],
+) {
+  const supabase = await createClient();
+  const {
+    data: { user },
+  } = await supabase.auth.getUser();
+
+  if (!user) {
+    throw new Error("Unauthorized");
+  }
+
+  // Stored in user_metadata; Supabase shallow-merges these keys, so the user's
+  // name fields set by updateProfile are preserved.
+  const cleaned = [...new Set(leadTimes)].filter((n) => Number.isFinite(n) && n >= 0);
+
+  const { error } = await supabase.auth.updateUser({
+    data: {
+      reminders_enabled: enabled,
+      reminder_lead_times: cleaned,
+    },
+  });
+
+  if (error) {
+    throw new Error(`Failed to update reminder preferences: ${error.message}`);
+  }
+
+  revalidatePath("/dashboard");
+}
+
 export async function signOutUser() {
   const supabase = await createClient();
   await supabase.auth.signOut();

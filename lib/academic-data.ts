@@ -6,8 +6,10 @@ import type {
   AcademicTask,
   DashboardData,
   FocusLog,
+  ReminderPreferences,
   UserProfile,
 } from "@/lib/types";
+import { DEFAULT_REMINDER_PREFERENCES } from "@/lib/types";
 
 /**
  * Fetches everything the dashboard needs (profile, tasks, courses, focus logs)
@@ -145,8 +147,20 @@ export const getDashboardData = cache(async (): Promise<DashboardData | null> =>
     name: firstName,
   };
 
+  const meta = user.user_metadata ?? {};
+  const reminderPreferences: ReminderPreferences = {
+    enabled:
+      typeof meta.reminders_enabled === "boolean"
+        ? meta.reminders_enabled
+        : DEFAULT_REMINDER_PREFERENCES.enabled,
+    leadTimes: Array.isArray(meta.reminder_lead_times)
+      ? (meta.reminder_lead_times as number[])
+      : DEFAULT_REMINDER_PREFERENCES.leadTimes,
+  };
+
   return {
     user: profile,
+    reminderPreferences,
     tasks,
     courses,
     focusLogs,

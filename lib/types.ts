@@ -48,8 +48,29 @@ export type UserProfile = {
   lastName?: string;
 };
 
+export type ReminderPreferences = {
+  enabled: boolean;
+  // Minutes before a deadline to remind (0 = at the deadline).
+  leadTimes: number[];
+};
+
+export const DEFAULT_REMINDER_PREFERENCES: ReminderPreferences = {
+  enabled: true,
+  leadTimes: [1440, 180],
+};
+
+export const REMINDER_LEAD_TIME_OPTIONS: { minutes: number; label: string }[] = [
+  { minutes: 0, label: "At the deadline" },
+  { minutes: 60, label: "1 hour before" },
+  { minutes: 180, label: "3 hours before" },
+  { minutes: 720, label: "12 hours before" },
+  { minutes: 1440, label: "1 day before" },
+  { minutes: 2880, label: "2 days before" },
+];
+
 export type DashboardData = {
   user: UserProfile | null;
+  reminderPreferences: ReminderPreferences;
   tasks: AcademicTask[];
   courses: AcademicCourse[];
   focusLogs: FocusLog[];

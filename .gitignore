@@ -34,6 +34,8 @@ dev.err
 
 # local screenshots
 *.png
+# ...but PWA/app icons must be committed
+!public/*.png
 
 # env files (can opt-in for committing if needed)
 .env*

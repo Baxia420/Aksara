@@ -1,5 +1,6 @@
 import { getDashboardData } from "@/lib/academic-data";
 import { DashboardDataProvider } from "@/components/dashboard/DashboardDataProvider";
+import { InstallPrompt } from "@/components/InstallPrompt";
 
 export const dynamic = "force-dynamic";
 
@@ -18,6 +19,7 @@ export default function DashboardLayout({
   return (
     <DashboardDataProvider dataPromise={dataPromise}>
       {children}
+      <InstallPrompt />
     </DashboardDataProvider>
   );
 }

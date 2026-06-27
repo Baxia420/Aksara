@@ -1,10 +1,11 @@
-import type { Metadata } from "next";
+import type { Metadata, Viewport } from "next";
 import {
   Cormorant_Garamond,
   IBM_Plex_Mono,
   Manrope,
 } from "next/font/google";
 import "./globals.css";
+import { PwaRegister } from "@/components/PwaRegister";
 
 const displaySerif = Cormorant_Garamond({
   variable: "--font-display",
@@ -29,6 +30,26 @@ export const metadata: Metadata = {
   title: "Aksara — Academic OS",
   description:
     "A refined academic planning dashboard for schedules, coursework, and deadlines.",
+  applicationName: "Aksara",
+  appleWebApp: {
+    capable: true,
+    statusBarStyle: "default",
+    title: "Aksara",
+  },
+  icons: {
+    icon: [
+      { url: "/favicon-32.png", sizes: "32x32", type: "image/png" },
+      { url: "/icon-192.png", sizes: "192x192", type: "image/png" },
+    ],
+    apple: [{ url: "/apple-icon.png", sizes: "180x180", type: "image/png" }],
+  },
+};
+
+export const viewport: Viewport = {
+  themeColor: "#83103e",
+  width: "device-width",
+  initialScale: 1,
+  viewportFit: "cover",
 };
 
 export default function RootLayout({
@@ -41,7 +62,10 @@ export default function RootLayout({
       lang="en"
       className={`${displaySerif.variable} ${bodySans.variable} ${uiMono.variable} h-full`}
     >
-      <body className="min-h-full">{children}</body>
+      <body className="min-h-full">
+        {children}
+        <PwaRegister />
+      </body>
     </html>
   );
 }

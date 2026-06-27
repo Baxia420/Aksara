@@ -1564,7 +1564,7 @@ export default function DashboardPage() {
       </div>
 
       <div className="mx-auto min-h-[calc(100vh-2rem)] max-w-[28rem] lg:hidden">
-        <div className="px-2 pb-28 pt-6">
+        <div className="px-2 pb-28 pt-[calc(1.5rem+env(safe-area-inset-top))]">
           {mobileView === "dashboard" ? (
             <section>
               <MobileTopBar
@@ -1885,7 +1885,7 @@ export default function DashboardPage() {
           ) : null}
         </div>
 
-        <div className="pointer-events-none fixed inset-x-0 bottom-4 z-30 flex justify-center px-4 lg:hidden">
+        <div className="pointer-events-none fixed inset-x-0 bottom-[calc(1rem+env(safe-area-inset-bottom))] z-30 flex justify-center px-4 lg:hidden">
           <nav className="aksara-mobile-tabbar pointer-events-auto w-full max-w-[25rem] px-3 py-3">
         <div className="grid grid-cols-5 gap-0">
               {mobileTabs.map((item) => {

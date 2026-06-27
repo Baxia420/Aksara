@@ -745,7 +745,7 @@ export function FocusTimerView({
                     {/* Course header row */}
                     <div className="flex items-center justify-between gap-2">
                       <span
-                        className={`inline-flex items-center rounded-full border px-2.5 py-0.5 text-[0.65rem] font-bold tracking-[0.06em] shrink-0 ${pillClass}`}
+                        className={`inline-flex items-center rounded-full px-2.5 py-0.5 text-[0.65rem] font-bold tracking-[0.04em] shrink-0 ${pillClass}`}
                       >
                         {group.courseCode}
                       </span>

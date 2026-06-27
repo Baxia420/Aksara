@@ -35,6 +35,14 @@
   --course-4: #f8f7f3;
   --course-5: #fcf4e7;
 
+  /* Per-course tonal pills (wash bg + readable hue text) — theme-aware */
+  --pill-0-bg: rgba(178, 78, 114, 0.12); --pill-0-fg: #9f4568;
+  --pill-1-bg: rgba(184, 123, 38, 0.13); --pill-1-fg: #a9711f;
+  --pill-2-bg: rgba(70, 125, 182, 0.12); --pill-2-fg: #3a6ca3;
+  --pill-3-bg: rgba(93, 117, 179, 0.12); --pill-3-fg: #51689e;
+  --pill-4-bg: rgba(126, 111, 63, 0.14); --pill-4-fg: #6f6235;
+  --pill-5-bg: rgba(173, 125, 28, 0.13); --pill-5-fg: #946513;
+
   /* Fixed decorative backdrop (light) */
   --backdrop:
     radial-gradient(circle at 13% 10%, rgba(226, 162, 47, 0.30), transparent 22%),
@@ -72,6 +80,14 @@
   --course-3: #222634;
   --course-4: #282821;
   --course-5: #2f2a1d;
+
+  /* Per-course tonal pills — lighter hue text on a hued wash for dark */
+  --pill-0-bg: rgba(216, 138, 166, 0.16); --pill-0-fg: #e7a7be;
+  --pill-1-bg: rgba(224, 176, 106, 0.16); --pill-1-fg: #e7bd80;
+  --pill-2-bg: rgba(120, 170, 224, 0.16); --pill-2-fg: #9fc4ec;
+  --pill-3-bg: rgba(150, 165, 230, 0.16); --pill-3-fg: #b3bdee;
+  --pill-4-bg: rgba(216, 201, 138, 0.15); --pill-4-fg: #ddcd8f;
+  --pill-5-bg: rgba(230, 192, 116, 0.15); --pill-5-fg: #e6c074;
 
   --backdrop:
     radial-gradient(circle at 13% 8%, rgba(226, 162, 47, 0.10), transparent 26%),

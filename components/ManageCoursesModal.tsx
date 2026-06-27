@@ -2,7 +2,7 @@
 
 import { useState, useEffect } from "react";
 import { addCourse, editCourse, deleteCourse } from "@/app/actions";
-import { coursePillClasses } from "@/lib/courseTheme";
+import { coursePillClasses, courseBarColors } from "@/lib/courseTheme";
 import type { AcademicCourse } from "@/lib/types";
 import { useEscapeKey } from "@/lib/useEscapeKey";
 
@@ -128,12 +128,12 @@ export function ManageCoursesModal({ isOpen, onClose, onRefresh, courses = [] }:
               <input required name="title" value={newTitle} onChange={(e) => setNewTitle(e.target.value)} placeholder="Title" className="w-full border border-line rounded-[0.85rem] px-3 py-2.5 text-sm outline-none focus:border-maroon-bright" />
             </div>
             <div className="flex items-center gap-1 border border-line rounded-[0.85rem] p-1.5 bg-surface">
-              {coursePillClasses.map((pillClass, i) => (
+              {courseBarColors.map((barClass, i) => (
                 <button
                   key={i}
                   type="button"
                   onClick={() => setNewColorIndex(i)}
-                  className={`size-6 rounded-full border-2 transition-all ${newColorIndex === i ? "border-maroon-bright scale-110" : "border-transparent hover:scale-110"} ${pillClass.split(" ")[1]}`}
+                  className={`size-6 rounded-full border-2 transition-all ${newColorIndex === i ? "border-maroon-bright scale-110" : "border-transparent hover:scale-110"} ${barClass}`}
                 />
               ))}
               <input type="hidden" name="colorIndex" value={newColorIndex} />
@@ -152,20 +152,20 @@ export function ManageCoursesModal({ isOpen, onClose, onRefresh, courses = [] }:
             courses.map(course => (
               <div key={course.id} className="flex items-center justify-between border border-line bg-surface rounded-[1rem] p-4 shadow-sm hover:shadow-md transition">
                 <div>
-                  <div className={`inline-block px-2.5 py-1 rounded-full text-xs font-semibold border ${coursePillClasses[course.colorIndex] || coursePillClasses[0]}`}>
+                  <div className={`inline-block px-2.5 py-1 rounded-full text-xs font-semibold ${coursePillClasses[course.colorIndex] || coursePillClasses[0]}`}>
                     {course.code}
                   </div>
                   <h4 className="mt-2 text-ink font-semibold">{course.title}</h4>
                 </div>
                 <div className="flex items-center gap-5">
                   <div className="flex items-center gap-1">
-                    {coursePillClasses.map((pillClass, i) => (
+                    {courseBarColors.map((barClass, i) => (
                       <button
                         key={i}
                         type="button"
                         onClick={() => handleUpdateColor(course.id, i)}
                         disabled={isSubmitting}
-                        className={`size-5 rounded-full border-2 transition-all ${course.colorIndex === i ? "border-maroon-bright scale-110" : "border-transparent hover:scale-110"} ${pillClass.split(" ")[1]}`}
+                        className={`size-5 rounded-full border-2 transition-all ${course.colorIndex === i ? "border-maroon-bright scale-110" : "border-transparent hover:scale-110"} ${barClass}`}
                       />
                     ))}
                   </div>

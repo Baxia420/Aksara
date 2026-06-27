@@ -1,13 +1,16 @@
 // Single source of truth for the per-course color palettes. Index into these
 // arrays with a course's colorIndex (wrap with `% length` to stay in range).
 
+// Tonal pills: a soft wash of the course hue + readable hue text. Both the wash
+// and the text are theme-aware (see --pill-N-* in globals.css), so they sit
+// naturally on light and dark cards alike.
 export const coursePillClasses = [
-  "border-[#dfb1c1] bg-[#fff7fa] text-[#9f4568]",
-  "border-[#eac08a] bg-[#fffaf1] text-[#b87b26]",
-  "border-[#a2c7eb] bg-[#f4fbff] text-[#467db6]",
-  "border-[#b9c8ec] bg-[#f5f8ff] text-[#5d75b3]",
-  "border-[#d7cfb7] bg-[#fcfbf5] text-[#7e6f3f]",
-  "border-[#f1d5a2] bg-[#fff8ec] text-[#ad7d1c]",
+  "bg-[var(--pill-0-bg)] text-[var(--pill-0-fg)]",
+  "bg-[var(--pill-1-bg)] text-[var(--pill-1-fg)]",
+  "bg-[var(--pill-2-bg)] text-[var(--pill-2-fg)]",
+  "bg-[var(--pill-3-bg)] text-[var(--pill-3-fg)]",
+  "bg-[var(--pill-4-bg)] text-[var(--pill-4-fg)]",
+  "bg-[var(--pill-5-bg)] text-[var(--pill-5-fg)]",
 ];
 
 export const courseTints = [

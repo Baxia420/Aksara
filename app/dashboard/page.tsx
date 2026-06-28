@@ -15,6 +15,7 @@ import {
   Home,
   ListTodo,
   Pencil,
+  Settings,
   Timer,
 } from "lucide-react";
 import { FocusTimerView } from "@/components/FocusTimerView";
@@ -881,6 +882,15 @@ export default function DashboardPage() {
               </div>
 
               <div className="flex items-center gap-4">
+                <button
+                  type="button"
+                  onClick={openSettings}
+                  aria-label="Settings"
+                  title="Settings"
+                  className="aksara-icon-button size-14 rounded-full transition hover:border-maroon-bright hover:text-maroon-bright"
+                >
+                  <Settings className="size-5" />
+                </button>
                 <div className="relative">
                   <button
                     onClick={() => setIsProfileOpen((prev) => !prev)}

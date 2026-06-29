@@ -1708,26 +1708,26 @@ export default function DashboardPage() {
 
           {view === "tasks" ? (
             <section>
-              <div className="flex items-end justify-between gap-4">
-                <MobileTopBar
-                  meta="Academic OS / Tasks"
-                  title="All"
-                  accent="tasks."
-                  userProfile={userProfile}
-                  onOpenSettings={openSettings}
-                  onLogout={handleLogout}
-                />
+              <MobileTopBar
+                meta="Academic OS / Tasks"
+                title="All"
+                accent="tasks."
+                userProfile={userProfile}
+                onOpenSettings={openSettings}
+                onLogout={handleLogout}
+              />
+              <div className="mt-5 flex justify-end">
                 <button
                   type="button"
                   onClick={() => setIsModalOpen(true)}
-                  className="aksara-primary-button mb-1 shrink-0 flex items-center gap-2 rounded-2xl px-5 py-3 text-sm font-semibold text-white shadow-lg"
+                  className="aksara-primary-button flex items-center gap-2 rounded-2xl px-5 py-3 text-sm font-semibold text-white shadow-lg"
                 >
                   <Pencil className="size-3.5" />
                   Add Task
                 </button>
               </div>
 
-              <article className="aksara-card mt-7 px-5 py-4">
+              <article className="aksara-card mt-5 px-5 py-4">
                 <div className="grid grid-cols-3 divide-x divide-[#edd9de] text-center">
                   <div>
                     <p className="text-[2.15rem] font-semibold text-maroon-bright">
@@ -1795,26 +1795,26 @@ export default function DashboardPage() {
 
           {view === "courses" ? (
             <section>
-              <div className="flex items-end justify-between gap-4">
-                <MobileTopBar
-                  meta="Academic OS / Courses"
-                  title="Your"
-                  accent="courses."
-                  userProfile={userProfile}
-                  onOpenSettings={openSettings}
-                  onLogout={handleLogout}
-                />
+              <MobileTopBar
+                meta="Academic OS / Courses"
+                title="Your"
+                accent="courses."
+                userProfile={userProfile}
+                onOpenSettings={openSettings}
+                onLogout={handleLogout}
+              />
+              <div className="mt-5 flex justify-end">
                 <button
                   type="button"
                   onClick={() => setIsManageCoursesOpen(true)}
-                  className="aksara-primary-button mb-1 shrink-0 flex items-center gap-2 rounded-2xl px-5 py-3 text-sm font-semibold text-white shadow-lg"
+                  className="aksara-primary-button flex items-center gap-2 rounded-2xl px-5 py-3 text-sm font-semibold text-white shadow-lg"
                 >
                   <Pencil className="size-3.5" />
                   Manage
                 </button>
               </div>
 
-              <article className="aksara-card mt-7 px-6 py-5">
+              <article className="aksara-card mt-5 px-6 py-5">
                 <div className="flex items-center justify-between gap-4">
                   <p className="aksara-mono text-[0.58rem] text-maroon-soft">
                     Enrolled

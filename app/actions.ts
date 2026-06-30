@@ -356,6 +356,91 @@ export async function updateReminderPreferences(
   revalidatePath("/dashboard");
 }
 
+type StoredPushSubscription = {
+  endpoint: string;
+  keys: { p256dh: string; auth: string };
+};
+
+/** Saves a browser push subscription on the user's account (one per device,
+ *  deduped by endpoint). Stored in user_metadata so no extra table is needed. */
+export async function savePushSubscription(sub: StoredPushSubscription) {
+  const supabase = await createClient();
+  const {
+    data: { user },
+  } = await supabase.auth.getUser();
+  if (!user) throw new Error("Unauthorized");
+
+  const existing: StoredPushSubscription[] = Array.isArray(
+    user.user_metadata?.push_subscriptions,
+  )
+    ? user.user_metadata.push_subscriptions
+    : [];
+  const next = [
+    ...existing.filter((s) => s.endpoint !== sub.endpoint),
+    { endpoint: sub.endpoint, keys: sub.keys },
+  ];
+
+  const { error } = await supabase.auth.updateUser({
+    data: { push_subscriptions: next },
+  });
+  if (error) throw new Error(`Failed to save subscription: ${error.message}`);
+}
+
+/** Removes a push subscription (this device) from the user's account. */
+export async function removePushSubscription(endpoint: string) {
+  const supabase = await createClient();
+  const {
+    data: { user },
+  } = await supabase.auth.getUser();
+  if (!user) throw new Error("Unauthorized");
+
+  const existing: StoredPushSubscription[] = Array.isArray(
+    user.user_metadata?.push_subscriptions,
+  )
+    ? user.user_metadata.push_subscriptions
+    : [];
+
+  const { error } = await supabase.auth.updateUser({
+    data: { push_subscriptions: existing.filter((s) => s.endpoint !== endpoint) },
+  });
+  if (error) throw new Error(`Failed to remove subscription: ${error.message}`);
+}
+
+/** Sends a one-off test notification to all of the current user's devices. */
+export async function sendTestNotification() {
+  const { getWebPush } = await import("@/lib/push");
+  const webpush = getWebPush();
+  if (!webpush) throw new Error("Push is not configured on the server.");
+
+  const supabase = await createClient();
+  const {
+    data: { user },
+  } = await supabase.auth.getUser();
+  if (!user) throw new Error("Unauthorized");
+
+  const subs: StoredPushSubscription[] = Array.isArray(
+    user.user_metadata?.push_subscriptions,
+  )
+    ? user.user_metadata.push_subscriptions
+    : [];
+  if (subs.length === 0) throw new Error("No device is subscribed yet.");
+
+  const payload = JSON.stringify({
+    title: "Aksara",
+    body: "Test notification — reminders are working.",
+    url: "/dashboard",
+  });
+
+  await Promise.allSettled(
+    subs.map((s) =>
+      webpush.sendNotification(
+        { endpoint: s.endpoint, keys: s.keys },
+        payload,
+      ),
+    ),
+  );
+}
+
 export async function signOutUser() {
   const supabase = await createClient();
   await supabase.auth.signOut();

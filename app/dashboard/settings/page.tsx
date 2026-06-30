@@ -7,6 +7,7 @@ import { ArrowLeft, Bell, GraduationCap } from "lucide-react";
 import { updateProfile, updateReminderPreferences } from "@/app/actions";
 import { useDashboardDataPromise } from "@/components/dashboard/DashboardDataProvider";
 import { ThemeToggle } from "@/components/ThemeToggle";
+import { NotificationToggle } from "@/components/NotificationToggle";
 import { REMINDER_LEAD_TIME_OPTIONS } from "@/lib/types";
 
 export default function SettingsPage() {
@@ -168,6 +169,8 @@ export default function SettingsPage() {
             {remindersSaving ? "Saving..." : "Save"}
           </button>
         </div>
+
+        <NotificationToggle />
       </section>
 
       {/* Account */}

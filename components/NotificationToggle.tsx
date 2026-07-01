@@ -1,7 +1,7 @@
 "use client";
 
 import { useEffect, useState } from "react";
-import { Bell, BellOff } from "lucide-react";
+import { Bell, BellOff, BellRing, Settings } from "lucide-react";
 import {
   savePushSubscription,
   removePushSubscription,
@@ -17,62 +17,92 @@ function urlBase64ToUint8Array(base64String: string) {
   return arr;
 }
 
-type State = "loading" | "unsupported" | "ios-install" | "off" | "on";
+type State = "loading" | "unsupported" | "ios-install" | "denied" | "off" | "on";
 
 export function NotificationToggle() {
   const [state, setState] = useState<State>("loading");
   const [busy, setBusy] = useState(false);
   const [msg, setMsg] = useState<string | null>(null);
 
+  async function resolveState() {
+    const supported =
+      "serviceWorker" in navigator && "PushManager" in window && "Notification" in window;
+    if (!supported) {
+      const isIOS = /iphone|ipad|ipod/i.test(navigator.userAgent);
+      const standalone =
+        window.matchMedia("(display-mode: standalone)").matches ||
+        (navigator as Navigator & { standalone?: boolean }).standalone === true;
+      setState(isIOS && !standalone ? "ios-install" : "unsupported");
+      return;
+    }
+    if (Notification.permission === "denied") {
+      setState("denied");
+      return;
+    }
+    try {
+      const reg = await navigator.serviceWorker.ready;
+      const sub = await reg.pushManager.getSubscription();
+      setState(sub ? "on" : "off");
+    } catch {
+      setState("off");
+    }
+  }
+
   useEffect(() => {
-    (async () => {
-      const supported =
-        "serviceWorker" in navigator && "PushManager" in window && "Notification" in window;
-      if (!supported) {
-        // iOS only supports push once the PWA is installed to the home screen.
-        const isIOS = /iphone|ipad|ipod/i.test(navigator.userAgent);
-        const standalone =
-          window.matchMedia("(display-mode: standalone)").matches ||
-          (navigator as Navigator & { standalone?: boolean }).standalone === true;
-        setState(isIOS && !standalone ? "ios-install" : "unsupported");
+    resolveState();
+  }, []);
+
+  async function requestPermissionAndSubscribe() {
+    setBusy(true);
+    setMsg(null);
+    try {
+      const permission = await Notification.requestPermission();
+      if (permission === "denied") {
+        setState("denied");
         return;
       }
-      try {
-        const reg = await navigator.serviceWorker.ready;
-        const sub = await reg.pushManager.getSubscription();
-        setState(sub ? "on" : "off");
-      } catch {
-        setState("off");
+      if (permission !== "granted") {
+        setMsg("Permission not granted. Please try again.");
+        return;
       }
-    })();
-  }, []);
+      await subscribe();
+    } catch (e) {
+      setMsg(e instanceof Error ? e.message : "Could not enable notifications.");
+    } finally {
+      setBusy(false);
+    }
+  }
+
+  async function subscribe() {
+    const reg = await navigator.serviceWorker.ready;
+    const key = process.env.NEXT_PUBLIC_VAPID_PUBLIC_KEY;
+    if (!key) {
+      setMsg("Push is not configured.");
+      return;
+    }
+    const sub = await reg.pushManager.subscribe({
+      userVisibleOnly: true,
+      applicationServerKey: urlBase64ToUint8Array(key),
+    });
+    const json = sub.toJSON() as {
+      endpoint: string;
+      keys: { p256dh: string; auth: string };
+    };
+    await savePushSubscription({ endpoint: json.endpoint, keys: json.keys });
+    setState("on");
+    setMsg("Notifications enabled on this device.");
+  }
 
   async function enable() {
     setBusy(true);
     setMsg(null);
     try {
-      const permission = await Notification.requestPermission();
-      if (permission !== "granted") {
-        setMsg("Notifications permission was not granted.");
-        return;
+      // Permission already granted (e.g. after cache clear) — just re-subscribe.
+      if (Notification.permission === "granted") {
+        await subscribe();
+      } else {
+        await requestPermissionAndSubscribe();
       }
-      const reg = await navigator.serviceWorker.ready;
-      const key = process.env.NEXT_PUBLIC_VAPID_PUBLIC_KEY;
-      if (!key) {
-        setMsg("Push is not configured.");
-        return;
-      }
-      const sub = await reg.pushManager.subscribe({
-        userVisibleOnly: true,
-        applicationServerKey: urlBase64ToUint8Array(key),
-      });
-      const json = sub.toJSON() as {
-        endpoint: string;
-        keys: { p256dh: string; auth: string };
-      };
-      await savePushSubscription({ endpoint: json.endpoint, keys: json.keys });
-      setState("on");
-      setMsg("Notifications enabled on this device.");
     } catch (e) {
       setMsg(e instanceof Error ? e.message : "Could not enable notifications.");
     } finally {
@@ -130,6 +160,13 @@ export function NotificationToggle() {
           <span className="max-w-[16rem] text-right text-xs text-ink-soft">
             On iPhone, add Aksara to your Home Screen first, then enable here.
           </span>
+        ) : state === "denied" ? (
+          <div className="flex items-center gap-2">
+            <Settings className="size-4 shrink-0 text-ink-muted" />
+            <span className="text-right text-xs text-ink-muted">
+              Blocked in browser settings.
+            </span>
+          </div>
         ) : state === "on" ? (
           <div className="flex items-center gap-2">
             <button
@@ -151,6 +188,7 @@ export function NotificationToggle() {
             </button>
           </div>
         ) : (
+          // state === "off": permission is "default" or "granted" but no subscription
           <button
             type="button"
             onClick={enable}
@@ -162,7 +200,32 @@ export function NotificationToggle() {
           </button>
         )}
       </div>
-      {msg ? <p className="mt-3 text-sm text-maroon-soft">{msg}</p> : null}
+
+      {state === "denied" && (
+        <div className="mt-3 flex items-start gap-3 rounded-[0.85rem] border border-line bg-surface-soft p-4">
+          <BellRing className="mt-0.5 size-4 shrink-0 text-maroon" />
+          <div className="text-xs text-ink-muted">
+            <p className="font-semibold text-ink">Notifications are blocked</p>
+            <p className="mt-1">
+              To re-enable, go to your device&apos;s{" "}
+              <strong>Settings → Apps → Safari → Notifications</strong> (iOS) or open{" "}
+              <strong>Safari → Settings for this website</strong> and set Notifications to{" "}
+              <em>Allow</em>, then come back and tap Enable.
+            </p>
+            <button
+              type="button"
+              onClick={() => resolveState()}
+              className="mt-2 font-semibold text-maroon underline-offset-2 hover:underline"
+            >
+              I&apos;ve updated my settings — check again
+            </button>
+          </div>
+        </div>
+      )}
+
+      {msg && state !== "denied" ? (
+        <p className="mt-3 text-sm text-maroon-soft">{msg}</p>
+      ) : null}
     </div>
   );
 }

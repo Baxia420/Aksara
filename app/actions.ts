@@ -3,9 +3,15 @@
 import { createClient } from "@/lib/supabase/server";
 import { revalidatePath } from "next/cache";
 
-// The account that owns shared/public courses and tasks. Configured via env so
-// no personal address is baked into the source.
-const ADMIN_EMAIL = process.env.ADMIN_EMAIL;
+// The account that owns shared/public courses and tasks. Prefer the env var
+// (set it in Vercel to keep config in one place); fall back to the known admin
+// address so production still recognizes the admin if the env var is missing.
+// Compared case-insensitively — see isAdmin().
+const ADMIN_EMAIL = process.env.ADMIN_EMAIL ?? "alam.j@graduate.utm.my";
+
+function isAdmin(email: string | undefined): boolean {
+  return !!email && email.toLowerCase() === ADMIN_EMAIL.toLowerCase();
+}
 
 export async function toggleTaskCompletion(taskId: string, isCompleted: boolean) {
   const supabase = await createClient();
@@ -64,7 +70,7 @@ export async function createTask(formData: FormData): Promise<{ error: string } 
     return { error: "Missing required fields" };
   }
 
-  const isPublic = user.email === ADMIN_EMAIL;
+  const isPublic = isAdmin(user.email);
 
   const { error } = await supabase.from("tasks").insert({
     user_id: user.id,
@@ -102,7 +108,7 @@ export async function addCourse(formData: FormData) {
     throw new Error("Missing required fields");
   }
 
-  const isPublic = user.email === ADMIN_EMAIL;
+  const isPublic = isAdmin(user.email);
 
   const { error } = await supabase.from("courses").insert({
     user_id: user.id,
@@ -144,7 +150,7 @@ export async function editCourse(formData: FormData) {
     throw new Error("Course not found");
   }
 
-  if (course.is_public && user.email !== ADMIN_EMAIL) {
+  if (course.is_public && !isAdmin(user.email)) {
     throw new Error("Only the administrator can edit shared courses.");
   }
 
@@ -152,7 +158,7 @@ export async function editCourse(formData: FormData) {
     .from("courses")
     .update({ color_index: colorIndex })
     .eq("id", id)
-    .eq(user.email === ADMIN_EMAIL ? "id" : "user_id", user.email === ADMIN_EMAIL ? id : user.id);
+    .eq(isAdmin(user.email) ? "id" : "user_id", isAdmin(user.email) ? id : user.id);
 
   if (error) {
     throw new Error(`Failed to update course: ${error.message}`);
@@ -179,7 +185,7 @@ export async function deleteCourse(id: string, code: string) {
     throw new Error("Course not found");
   }
 
-  if (course.is_public && user.email !== ADMIN_EMAIL) {
+  if (course.is_public && !isAdmin(user.email)) {
     throw new Error("Only the administrator can delete shared courses.");
   }
 
@@ -202,7 +208,7 @@ export async function deleteCourse(id: string, code: string) {
     .from("courses")
     .delete()
     .eq("id", id)
-    .eq(user.email === ADMIN_EMAIL ? "id" : "user_id", user.email === ADMIN_EMAIL ? id : user.id);
+    .eq(isAdmin(user.email) ? "id" : "user_id", isAdmin(user.email) ? id : user.id);
 
   if (error) {
     throw new Error(`Failed to delete course: ${error.message}`);
@@ -243,7 +249,7 @@ export async function editTask(formData: FormData): Promise<{ error: string } | 
 
   // Non-admins can't touch the shared task itself — fork a personal copy
   // instead, so their edit doesn't affect what every other user sees.
-  if (task.is_public && user.email !== ADMIN_EMAIL) {
+  if (task.is_public && !isAdmin(user.email)) {
     const { error: insertError } = await supabase.from("tasks").insert({
       user_id: user.id,
       course_code: courseCode,
@@ -275,7 +281,7 @@ export async function editTask(formData: FormData): Promise<{ error: string } | 
       due_time: dueTime,
     })
     .eq("id", id)
-    .eq(user.email === ADMIN_EMAIL ? "id" : "user_id", user.email === ADMIN_EMAIL ? id : user.id);
+    .eq(isAdmin(user.email) ? "id" : "user_id", isAdmin(user.email) ? id : user.id);
 
   if (error) {
     return { error: error.message };
@@ -303,7 +309,7 @@ export async function deleteTask(id: string): Promise<{ error: string } | { succ
     return { error: `Task not found${fetchError ? `: ${fetchError.message}` : ""}` };
   }
 
-  if (task.is_public && user.email !== ADMIN_EMAIL) {
+  if (task.is_public && !isAdmin(user.email)) {
     return { error: "Only the administrator can delete shared tasks." };
   }
 
@@ -311,7 +317,7 @@ export async function deleteTask(id: string): Promise<{ error: string } | { succ
     .from("tasks")
     .delete()
     .eq("id", id)
-    .eq(user.email === ADMIN_EMAIL ? "id" : "user_id", user.email === ADMIN_EMAIL ? id : user.id);
+    .eq(isAdmin(user.email) ? "id" : "user_id", isAdmin(user.email) ? id : user.id);
 
   if (error) {
     return { error: error.message };

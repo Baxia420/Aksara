@@ -60,45 +60,53 @@ export const getDashboardData = cache(async (): Promise<DashboardData | null> =>
   const today = new Date();
   const todayUtc = Date.UTC(today.getFullYear(), today.getMonth(), today.getDate());
 
-  const tasks: AcademicTask[] = (tasksRes.data ?? []).map((task) => {
-    const [year, month, day] = task.due_date.split("-").map(Number);
-    const dueUtc = Date.UTC(year, month - 1, day);
-    const daysRemaining = Math.round((dueUtc - todayUtc) / 86_400_000);
+  const tasks: AcademicTask[] = (tasksRes.data ?? [])
+    .filter((task) => {
+      if (!task.due_date) {
+        console.error(`Task ${task.id} has no due_date; excluding from dashboard.`);
+        return false;
+      }
+      return true;
+    })
+    .map((task) => {
+      const [year, month, day] = task.due_date.split("-").map(Number);
+      const dueUtc = Date.UTC(year, month - 1, day);
+      const daysRemaining = Math.round((dueUtc - todayUtc) / 86_400_000);
 
-    let dueTime = "";
-    if (task.due_time) {
-      const [hours, minutes] = task.due_time.split(":");
-      const hr = parseInt(hours, 10);
-      const period = hr >= 12 ? "PM" : "AM";
-      const hr12 = hr % 12 || 12;
-      dueTime = `${hr12}:${minutes} ${period}`;
-    }
+      let dueTime = "";
+      if (task.due_time) {
+        const [hours, minutes] = task.due_time.split(":");
+        const hr = parseInt(hours, 10);
+        const period = hr >= 12 ? "PM" : "AM";
+        const hr12 = hr % 12 || 12;
+        dueTime = `${hr12}:${minutes} ${period}`;
+      }
 
-    const isCompleted =
-      completedTaskIds.has(task.id) || (task.completed && task.user_id === user.id);
-    const completedAt =
-      completionMap.get(task.id) ||
-      (task.completed && task.user_id === user.id ? task.completed_at : null);
+      const isCompleted =
+        completedTaskIds.has(task.id) || (task.completed && task.user_id === user.id);
+      const completedAt =
+        completionMap.get(task.id) ||
+        (task.completed && task.user_id === user.id ? task.completed_at : null);
 
-    return {
-      id: task.id,
-      completed: isCompleted,
-      courseCode: task.course_code,
-      courseDisplay: task.course_title
-        ? `${task.course_code} - ${task.course_title}`
-        : task.course_code,
-      courseTitle: task.course_title || "General",
-      daysRemaining,
-      dueDateIso: task.due_date,
-      dueTime,
-      title: task.title,
-      type: task.type,
-      completedAt,
-      createdAt: task.created_at || null,
-      userId: task.user_id,
-      isPublic: task.is_public || false,
-    };
-  });
+      return {
+        id: task.id,
+        completed: isCompleted,
+        courseCode: task.course_code,
+        courseDisplay: task.course_title
+          ? `${task.course_code} - ${task.course_title}`
+          : task.course_code,
+        courseTitle: task.course_title || "General",
+        daysRemaining,
+        dueDateIso: task.due_date,
+        dueTime,
+        title: task.title,
+        type: task.type,
+        completedAt,
+        createdAt: task.created_at || null,
+        userId: task.user_id,
+        isPublic: task.is_public || false,
+      };
+    });
 
   const courses: AcademicCourse[] = (coursesRes.data ?? []).map((course) => ({
     id: course.id,

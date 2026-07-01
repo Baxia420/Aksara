@@ -45,12 +45,12 @@ export async function toggleTaskCompletion(taskId: string, isCompleted: boolean)
   revalidatePath("/dashboard");
 }
 
-export async function createTask(formData: FormData) {
+export async function createTask(formData: FormData): Promise<{ error: string } | { success: true }> {
   const supabase = await createClient();
   const { data: { user } } = await supabase.auth.getUser();
 
   if (!user) {
-    throw new Error("Unauthorized");
+    return { error: "Unauthorized" };
   }
 
   const courseCode = formData.get("courseCode") as string;
@@ -61,7 +61,7 @@ export async function createTask(formData: FormData) {
   const dueTime = (formData.get("dueTime") as string) || null;
 
   if (!courseCode || !title || !dueDate || !type) {
-    throw new Error("Missing required fields");
+    return { error: "Missing required fields" };
   }
 
   const isPublic = user.email === ADMIN_EMAIL;
@@ -79,10 +79,11 @@ export async function createTask(formData: FormData) {
   });
 
   if (error) {
-    throw new Error(`Failed to create task: ${error.message}`);
+    return { error: error.message };
   }
 
   revalidatePath("/dashboard");
+  return { success: true };
 }
 
 export async function addCourse(formData: FormData) {
@@ -210,12 +211,12 @@ export async function deleteCourse(id: string, code: string) {
   revalidatePath("/dashboard");
 }
 
-export async function editTask(formData: FormData) {
+export async function editTask(formData: FormData): Promise<{ error: string } | { success: true }> {
   const supabase = await createClient();
   const { data: { user } } = await supabase.auth.getUser();
 
   if (!user) {
-    throw new Error("Unauthorized");
+    return { error: "Unauthorized" };
   }
 
   const id = formData.get("id") as string;
@@ -227,7 +228,7 @@ export async function editTask(formData: FormData) {
   const dueTime = (formData.get("dueTime") as string) || null;
 
   if (!id || !courseCode || !title || !dueDate || !type) {
-    throw new Error("Missing required fields");
+    return { error: "Missing required fields" };
   }
 
   const { data: task, error: fetchError } = await supabase
@@ -237,11 +238,11 @@ export async function editTask(formData: FormData) {
     .single();
 
   if (fetchError || !task) {
-    throw new Error("Task not found");
+    return { error: `Task not found${fetchError ? `: ${fetchError.message}` : ""}` };
   }
 
   if (task.is_public && user.email !== ADMIN_EMAIL) {
-    throw new Error("Only the administrator can edit shared tasks.");
+    return { error: "Only the administrator can edit shared tasks." };
   }
 
   const { error } = await supabase
@@ -258,18 +259,19 @@ export async function editTask(formData: FormData) {
     .eq(user.email === ADMIN_EMAIL ? "id" : "user_id", user.email === ADMIN_EMAIL ? id : user.id);
 
   if (error) {
-    throw new Error(`Failed to edit task: ${error.message}`);
+    return { error: error.message };
   }
 
   revalidatePath("/dashboard");
+  return { success: true };
 }
 
-export async function deleteTask(id: string) {
+export async function deleteTask(id: string): Promise<{ error: string } | { success: true }> {
   const supabase = await createClient();
   const { data: { user } } = await supabase.auth.getUser();
 
   if (!user) {
-    throw new Error("Unauthorized");
+    return { error: "Unauthorized" };
   }
 
   const { data: task, error: fetchError } = await supabase
@@ -279,11 +281,11 @@ export async function deleteTask(id: string) {
     .single();
 
   if (fetchError || !task) {
-    throw new Error("Task not found");
+    return { error: `Task not found${fetchError ? `: ${fetchError.message}` : ""}` };
   }
 
   if (task.is_public && user.email !== ADMIN_EMAIL) {
-    throw new Error("Only the administrator can delete shared tasks.");
+    return { error: "Only the administrator can delete shared tasks." };
   }
 
   const { error } = await supabase
@@ -293,10 +295,11 @@ export async function deleteTask(id: string) {
     .eq(user.email === ADMIN_EMAIL ? "id" : "user_id", user.email === ADMIN_EMAIL ? id : user.id);
 
   if (error) {
-    throw new Error(`Failed to delete task: ${error.message}`);
+    return { error: error.message };
   }
 
   revalidatePath("/dashboard");
+  return { success: true };
 }
 
 export async function logFocusSession(

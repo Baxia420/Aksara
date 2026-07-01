@@ -65,10 +65,12 @@ export function AddTaskModal({ isOpen, onClose, tasks = [], courses = [], taskTo
   async function handleSubmit(formData: FormData) {
     setIsSubmitting(true);
     try {
-      if (taskToEdit) {
-        await editTask(formData);
-      } else {
-        await createTask(formData);
+      const result = taskToEdit
+        ? await editTask(formData)
+        : await createTask(formData);
+      if ("error" in result) {
+        alert(`${taskToEdit ? "Failed to edit task" : "Failed to create task"}: ${result.error}`);
+        return;
       }
       onClose();
     } catch (e) {
@@ -85,7 +87,11 @@ export function AddTaskModal({ isOpen, onClose, tasks = [], courses = [], taskTo
     if (!taskToEdit) return;
     setIsSubmitting(true);
     try {
-      await deleteTask(taskToEdit.id);
+      const result = await deleteTask(taskToEdit.id);
+      if ("error" in result) {
+        alert(`Failed to delete task: ${result.error}`);
+        return;
+      }
       onClose();
     } catch (e) {
       const detail = e instanceof Error ? e.message : "";

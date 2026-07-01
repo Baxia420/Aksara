@@ -72,6 +72,11 @@ export function AddTaskModal({ isOpen, onClose, tasks = [], courses = [], taskTo
         alert(`${taskToEdit ? "Failed to edit task" : "Failed to create task"}: ${result.error}`);
         return;
       }
+      if ("forked" in result && result.forked) {
+        alert(
+          "This is a shared task, so your edit was saved as your own personal copy. The original shared task is unchanged for other users.",
+        );
+      }
       onClose();
     } catch (e) {
       const detail = e instanceof Error ? e.message : "";

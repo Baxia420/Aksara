@@ -211,7 +211,7 @@ export async function deleteCourse(id: string, code: string) {
   revalidatePath("/dashboard");
 }
 
-export async function editTask(formData: FormData): Promise<{ error: string } | { success: true }> {
+export async function editTask(formData: FormData): Promise<{ error: string } | { success: true; forked?: boolean }> {
   const supabase = await createClient();
   const { data: { user } } = await supabase.auth.getUser();
 
@@ -241,8 +241,27 @@ export async function editTask(formData: FormData): Promise<{ error: string } | 
     return { error: `Task not found${fetchError ? `: ${fetchError.message}` : ""}` };
   }
 
+  // Non-admins can't touch the shared task itself — fork a personal copy
+  // instead, so their edit doesn't affect what every other user sees.
   if (task.is_public && user.email !== ADMIN_EMAIL) {
-    return { error: "Only the administrator can edit shared tasks." };
+    const { error: insertError } = await supabase.from("tasks").insert({
+      user_id: user.id,
+      course_code: courseCode,
+      course_title: courseTitle,
+      title,
+      type,
+      due_date: dueDate,
+      due_time: dueTime,
+      completed: false,
+      is_public: false,
+    });
+
+    if (insertError) {
+      return { error: insertError.message };
+    }
+
+    revalidatePath("/dashboard");
+    return { success: true, forked: true };
   }
 
   const { error } = await supabase

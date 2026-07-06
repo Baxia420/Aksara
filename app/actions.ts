@@ -2,16 +2,7 @@
 
 import { createClient } from "@/lib/supabase/server";
 import { revalidatePath } from "next/cache";
-
-// The account that owns shared/public courses and tasks. Prefer the env var
-// (set it in Vercel to keep config in one place); fall back to the known admin
-// address so production still recognizes the admin if the env var is missing.
-// Compared case-insensitively — see isAdmin().
-const ADMIN_EMAIL = process.env.ADMIN_EMAIL ?? "alam.j@graduate.utm.my";
-
-function isAdmin(email: string | undefined): boolean {
-  return !!email && email.toLowerCase() === ADMIN_EMAIL.toLowerCase();
-}
+import { isAdmin } from "@/lib/admin";
 
 export async function toggleTaskCompletion(taskId: string, isCompleted: boolean) {
   const supabase = await createClient();
@@ -217,7 +208,7 @@ export async function deleteCourse(id: string, code: string) {
   revalidatePath("/dashboard");
 }
 
-export async function editTask(formData: FormData): Promise<{ error: string } | { success: true; forked?: boolean }> {
+export async function editTask(formData: FormData): Promise<{ error: string } | { success: true }> {
   const supabase = await createClient();
   const { data: { user } } = await supabase.auth.getUser();
 
@@ -247,27 +238,10 @@ export async function editTask(formData: FormData): Promise<{ error: string } | 
     return { error: `Task not found${fetchError ? `: ${fetchError.message}` : ""}` };
   }
 
-  // Non-admins can't touch the shared task itself — fork a personal copy
-  // instead, so their edit doesn't affect what every other user sees.
+  // Shared tasks are the admin-owned syllabus — read-only to everyone else.
+  // The UI hides the edit button for these; this is the server-side backstop.
   if (task.is_public && !isAdmin(user.email)) {
-    const { error: insertError } = await supabase.from("tasks").insert({
-      user_id: user.id,
-      course_code: courseCode,
-      course_title: courseTitle,
-      title,
-      type,
-      due_date: dueDate,
-      due_time: dueTime,
-      completed: false,
-      is_public: false,
-    });
-
-    if (insertError) {
-      return { error: insertError.message };
-    }
-
-    revalidatePath("/dashboard");
-    return { success: true, forked: true };
+    return { error: "Only the administrator can edit shared tasks." };
   }
 
   const { error } = await supabase

@@ -1,6 +1,7 @@
 import "server-only";
 import { cache } from "react";
 import { createClient } from "@/lib/supabase/server";
+import { isAdmin } from "@/lib/admin";
 import type {
   AcademicCourse,
   AcademicTask,
@@ -168,6 +169,7 @@ export const getDashboardData = cache(async (): Promise<DashboardData | null> =>
 
   return {
     user: profile,
+    isAdmin: isAdmin(user.email),
     reminderPreferences,
     tasks,
     courses,

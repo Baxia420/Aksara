@@ -13,6 +13,7 @@ export function AddTaskModal({ isOpen, onClose, tasks = [], courses = [], taskTo
   const [dueDate, setDueDate] = useState("");
   const [dueTime, setDueTime] = useState("");
   const [showDeleteConfirm, setShowDeleteConfirm] = useState(false);
+  const [errorMsg, setErrorMsg] = useState<string | null>(null);
 
   const uniqueCourses: { code: string; title: string }[] =
     courses.length > 0
@@ -42,6 +43,7 @@ export function AddTaskModal({ isOpen, onClose, tasks = [], courses = [], taskTo
   useEffect(() => {
     if (isOpen) {
       setShowDeleteConfirm(false);
+      setErrorMsg(null);
       if (taskToEdit) {
         setSelectedCourse(taskToEdit.courseCode || "");
         setSelectedType(taskToEdit.type || "");
@@ -64,24 +66,19 @@ export function AddTaskModal({ isOpen, onClose, tasks = [], courses = [], taskTo
 
   async function handleSubmit(formData: FormData) {
     setIsSubmitting(true);
+    setErrorMsg(null);
     try {
       const result = taskToEdit
         ? await editTask(formData)
         : await createTask(formData);
       if ("error" in result) {
-        alert(`${taskToEdit ? "Failed to edit task" : "Failed to create task"}: ${result.error}`);
+        setErrorMsg(result.error);
         return;
-      }
-      if ("forked" in result && result.forked) {
-        alert(
-          "This is a shared task, so your edit was saved as your own personal copy. The original shared task is unchanged for other users.",
-        );
       }
       onClose();
     } catch (e) {
-      const detail = e instanceof Error ? e.message : "";
-      alert(
-        `${taskToEdit ? "Failed to edit task" : "Failed to create task"}${detail ? `: ${detail}` : ""}`,
+      setErrorMsg(
+        e instanceof Error ? e.message : "Something went wrong. Please try again.",
       );
     } finally {
       setIsSubmitting(false);
@@ -91,16 +88,18 @@ export function AddTaskModal({ isOpen, onClose, tasks = [], courses = [], taskTo
   async function handleDelete() {
     if (!taskToEdit) return;
     setIsSubmitting(true);
+    setErrorMsg(null);
     try {
       const result = await deleteTask(taskToEdit.id);
       if ("error" in result) {
-        alert(`Failed to delete task: ${result.error}`);
+        setErrorMsg(result.error);
         return;
       }
       onClose();
     } catch (e) {
-      const detail = e instanceof Error ? e.message : "";
-      alert(`Failed to delete task${detail ? `: ${detail}` : ""}`);
+      setErrorMsg(
+        e instanceof Error ? e.message : "Something went wrong. Please try again.",
+      );
     } finally {
       setIsSubmitting(false);
     }
@@ -197,6 +196,14 @@ export function AddTaskModal({ isOpen, onClose, tasks = [], courses = [], taskTo
               />
             </div>
           </div>
+          {errorMsg && (
+            <p
+              role="alert"
+              className="rounded-[0.85rem] border border-maroon-bright/30 bg-maroon-bright/5 px-4 py-3 text-sm font-medium text-maroon-bright"
+            >
+              {errorMsg}
+            </p>
+          )}
           <div className="flex justify-between items-center pt-4">
             <div>
               {taskToEdit && (

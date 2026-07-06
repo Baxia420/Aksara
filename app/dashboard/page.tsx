@@ -459,6 +459,15 @@ export default function DashboardPage() {
   const dashboardData = use(useDashboardDataPromise());
   const userProfile: UserProfile | null = dashboardData?.user ?? null;
   const syncedAt = dashboardData?.syncedAt ?? null;
+  const isAdmin = dashboardData?.isAdmin ?? false;
+
+  // A user may edit their own tasks; shared (is_public) tasks are the admin's
+  // read-only syllabus. Since the data query only ever returns a user's own
+  // private tasks plus shared ones, "not public" is sufficient to mean "mine".
+  const canEditTask = useCallback(
+    (task: AcademicTask) => isAdmin || !task.isPublic,
+    [isAdmin],
+  );
 
   // Mount the focus timer once (it owns intervals + audio); the desktop and
   // mobile layout trees both exist in the DOM, so without this it would mount
@@ -1158,18 +1167,20 @@ export default function DashboardPage() {
                               </span>
                             </div>
                             <div className="pt-2 flex items-center justify-end gap-3.5">
-                              <button
-                                type="button"
-                                onClick={() => {
-                                  setTaskToEdit(task);
-                                  setIsModalOpen(true);
-                                }}
-                                className="text-ink-soft hover:text-maroon transition-colors p-1"
-                                title="Edit Task"
-                                aria-label="Edit task"
-                              >
-                                <Pencil className="size-4.5" />
-                              </button>
+                              {canEditTask(task) && (
+                                <button
+                                  type="button"
+                                  onClick={() => {
+                                    setTaskToEdit(task);
+                                    setIsModalOpen(true);
+                                  }}
+                                  className="text-ink-soft hover:text-maroon transition-colors p-1"
+                                  title="Edit Task"
+                                  aria-label="Edit task"
+                                >
+                                  <Pencil className="size-4.5" />
+                                </button>
+                              )}
                               <button
                                 type="button"
                                 onClick={() => handleToggle(task.id, task.completed)}
@@ -1449,18 +1460,20 @@ export default function DashboardPage() {
                               </span>
                             </div>
                             <div className="pt-2 flex items-center justify-end gap-3.5">
-                              <button
-                                type="button"
-                                onClick={() => {
-                                  setTaskToEdit(task);
-                                  setIsModalOpen(true);
-                                }}
-                                className="text-ink-soft hover:text-maroon transition-colors p-1"
-                                title="Edit Task"
-                                aria-label="Edit task"
-                              >
-                                <Pencil className="size-4.5" />
-                              </button>
+                              {canEditTask(task) && (
+                                <button
+                                  type="button"
+                                  onClick={() => {
+                                    setTaskToEdit(task);
+                                    setIsModalOpen(true);
+                                  }}
+                                  className="text-ink-soft hover:text-maroon transition-colors p-1"
+                                  title="Edit Task"
+                                  aria-label="Edit task"
+                                >
+                                  <Pencil className="size-4.5" />
+                                </button>
+                              )}
                               <button
                                 type="button"
                                 onClick={() => handleToggle(task.id, task.completed)}

@@ -70,6 +70,8 @@ export const REMINDER_LEAD_TIME_OPTIONS: { minutes: number; label: string }[] = 
 
 export type DashboardData = {
   user: UserProfile | null;
+  // Whether the signed-in user is the admin who owns the shared syllabus.
+  isAdmin: boolean;
   reminderPreferences: ReminderPreferences;
   tasks: AcademicTask[];
   courses: AcademicCourse[];

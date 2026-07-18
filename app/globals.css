@@ -212,6 +212,25 @@ input {
     rgba(60, 30, 42, 0.30);
 }
 
+/* Login-page-only photographic backdrop. A fixed layer that sits above the
+   global body::before backdrop (both z-index -1; this paints later) but behind
+   page content. Swaps with the .dark theme class — no JS. */
+.login-backdrop::before {
+  content: "";
+  position: fixed;
+  inset: 0;
+  z-index: -1;
+  pointer-events: none;
+  background-image: url("/login-bg-light.png");
+  background-size: cover;
+  background-position: center;
+  background-repeat: no-repeat;
+}
+
+.dark .login-backdrop::before {
+  background-image: url("/login-bg-dark.png");
+}
+
 .aksara-primary-button {
   background: linear-gradient(180deg, #a71657 0%, #83103e 100%);
   box-shadow:

@@ -342,7 +342,7 @@ export default function Home() {
   const [isSignUp, setIsSignUp] = useState(false);
 
   return (
-    <main className="min-h-screen px-4 py-4 lg:px-8 lg:py-7">
+    <main className="login-backdrop min-h-screen px-4 py-4 lg:px-8 lg:py-7">
       <div className="mx-auto hidden min-h-[calc(100vh-2rem)] max-w-[95rem] flex-col lg:flex">
         <header className="flex items-center justify-between text-[0.95rem] text-ink-soft">
           <BrandMark />

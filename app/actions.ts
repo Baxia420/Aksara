@@ -409,23 +409,29 @@ export async function removePushSubscription(endpoint: string) {
 }
 
 /** Sends a one-off test notification to all of the current user's devices. */
-export async function sendTestNotification() {
+export async function sendTestNotification(): Promise<{ error: string } | { success: true }> {
   const { getWebPush } = await import("@/lib/push");
   const webpush = getWebPush();
-  if (!webpush) throw new Error("Push is not configured on the server.");
+  // Returned (not thrown) so the real reason survives Next.js's production
+  // redaction of thrown Server Action errors and reaches the Settings UI.
+  if (!webpush) {
+    return { error: "Push is not configured on the server (VAPID keys missing)." };
+  }
 
   const supabase = await createClient();
   const {
     data: { user },
   } = await supabase.auth.getUser();
-  if (!user) throw new Error("Unauthorized");
+  if (!user) return { error: "Unauthorized" };
 
   const subs: StoredPushSubscription[] = Array.isArray(
     user.user_metadata?.push_subscriptions,
   )
     ? user.user_metadata.push_subscriptions
     : [];
-  if (subs.length === 0) throw new Error("No device is subscribed yet.");
+  if (subs.length === 0) {
+    return { error: "No device is subscribed yet — tap Enable first." };
+  }
 
   const payload = JSON.stringify({
     title: "Aksara",
@@ -433,14 +439,22 @@ export async function sendTestNotification() {
     url: "/dashboard",
   });
 
-  await Promise.allSettled(
+  const results = await Promise.allSettled(
     subs.map((s) =>
-      webpush.sendNotification(
-        { endpoint: s.endpoint, keys: s.keys },
-        payload,
-      ),
+      webpush.sendNotification({ endpoint: s.endpoint, keys: s.keys }, payload),
     ),
   );
+
+  if (results.every((r) => r.status === "rejected")) {
+    const first = results.find((r) => r.status === "rejected") as
+      | PromiseRejectedResult
+      | undefined;
+    const reason = first?.reason;
+    const detail = reason instanceof Error ? reason.message : "unknown error";
+    return { error: `Push send failed: ${detail}` };
+  }
+
+  return { success: true };
 }
 
 export async function signOutUser() {

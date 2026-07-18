@@ -133,7 +133,11 @@ export function NotificationToggle() {
     setBusy(true);
     setMsg(null);
     try {
-      await sendTestNotification();
+      const result = await sendTestNotification();
+      if ("error" in result) {
+        setMsg(result.error);
+        return;
+      }
       setMsg("Test sent — check your notifications.");
     } catch (e) {
       setMsg(e instanceof Error ? e.message : "Could not send test.");

@@ -100,7 +100,7 @@ export function ManageCoursesModal({ isOpen, onClose, onRefresh, courses = [] }:
         role="dialog"
         aria-modal="true"
         aria-label="Manage courses"
-        className="aksara-card w-full max-w-2xl p-8 max-h-[90vh] flex flex-col"
+        className="aksara-card w-full max-w-2xl p-5 sm:p-8 max-h-[90vh] flex flex-col"
         onClick={(e) => e.stopPropagation()}
       >
         <div className="flex justify-between items-center mb-6">
@@ -120,14 +120,16 @@ export function ManageCoursesModal({ isOpen, onClose, onRefresh, courses = [] }:
 
         <div className="bg-surface-soft border border-line rounded-2xl p-5 mb-6">
           <h3 className="text-ink-soft font-semibold text-sm mb-3 uppercase tracking-wider">Add New Course</h3>
-          <form action={handleAddCourse} className="flex gap-3 items-start">
-            <div className="w-1/4">
+          {/* Wraps on phones: code + title become full-width rows, swatches and
+              the submit button share the last row instead of overflowing. */}
+          <form action={handleAddCourse} className="flex flex-wrap gap-3 items-start">
+            <div className="w-full sm:w-1/4">
               <input required name="code" value={newCode} onChange={(e) => setNewCode(e.target.value)} placeholder="Code (e.g. SCSE1203)" className="w-full border border-line rounded-[0.85rem] px-3 py-2.5 text-sm outline-none focus:border-maroon-bright" />
             </div>
-            <div className="flex-1">
+            <div className="w-full min-w-0 sm:w-auto sm:flex-1">
               <input required name="title" value={newTitle} onChange={(e) => setNewTitle(e.target.value)} placeholder="Title" className="w-full border border-line rounded-[0.85rem] px-3 py-2.5 text-sm outline-none focus:border-maroon-bright" />
             </div>
-            <div className="flex items-center gap-1 border border-line rounded-[0.85rem] p-1.5 bg-surface">
+            <div className="flex items-center gap-1 border border-line rounded-[0.85rem] p-1.5 bg-surface shrink-0">
               {courseBarColors.map((barClass, i) => (
                 <button
                   key={i}
@@ -138,7 +140,7 @@ export function ManageCoursesModal({ isOpen, onClose, onRefresh, courses = [] }:
               ))}
               <input type="hidden" name="colorIndex" value={newColorIndex} />
             </div>
-            <button type="submit" disabled={isSubmitting || !newCode || !newTitle} className="aksara-primary-button px-4 py-2.5 text-sm font-semibold text-white rounded-[0.85rem] disabled:opacity-70 whitespace-nowrap">
+            <button type="submit" disabled={isSubmitting || !newCode || !newTitle} className="aksara-primary-button flex-1 sm:flex-none px-4 py-2.5 text-sm font-semibold text-white rounded-[0.85rem] disabled:opacity-70 whitespace-nowrap">
               Add Course
             </button>
           </form>
@@ -150,14 +152,14 @@ export function ManageCoursesModal({ isOpen, onClose, onRefresh, courses = [] }:
             <p className="text-ink-soft text-sm text-center py-4">No courses explicitly added yet.</p>
           ) : (
             courses.map(course => (
-              <div key={course.id} className="flex items-center justify-between border border-line bg-surface rounded-[1rem] p-4 shadow-sm hover:shadow-md transition">
-                <div>
+              <div key={course.id} className="flex items-center justify-between gap-3 border border-line bg-surface rounded-[1rem] p-4 shadow-sm hover:shadow-md transition">
+                <div className="min-w-0">
                   <div className={`inline-block px-2.5 py-1 rounded-full text-xs font-semibold ${coursePillClasses[course.colorIndex] || coursePillClasses[0]}`}>
                     {course.code}
                   </div>
                   <h4 className="mt-2 text-ink font-semibold">{course.title}</h4>
                 </div>
-                <div className="flex items-center gap-5">
+                <div className="flex items-center gap-3 sm:gap-5 shrink-0">
                   <div className="flex items-center gap-1">
                     {courseBarColors.map((barClass, i) => (
                       <button

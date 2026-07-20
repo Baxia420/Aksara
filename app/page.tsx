@@ -407,7 +407,7 @@ export default function Home() {
         </div>
       </div>
 
-      <div className="mx-auto flex min-h-[100svh] max-w-[28rem] flex-col px-2 pt-2 lg:hidden">
+      <div className="mx-auto flex min-h-[100svh] max-w-[28rem] flex-col px-2 pt-[calc(0.5rem+env(safe-area-inset-top))] lg:hidden">
         <header className="pt-5">
           <BrandMark />
         </header>
@@ -442,7 +442,7 @@ export default function Home() {
           <LoginForm mobile isSignUp={isSignUp} setIsSignUp={setIsSignUp} />
         </div>
 
-        <footer className="mt-auto px-2 pb-8 pt-8 text-center">
+        <footer className="mt-auto px-2 pb-[calc(2rem+env(safe-area-inset-bottom))] pt-8 text-center">
           <p className="text-[0.88rem] font-medium tracking-[0.04em] text-ink-soft">
             Copyright 2026 Jobayer Alam. All rights reserved.
           </p>

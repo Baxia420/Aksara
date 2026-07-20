@@ -175,13 +175,13 @@ export function AddTaskModal({ isOpen, onClose, tasks = [], courses = [], taskTo
           <div className="grid grid-cols-2 gap-4">
             <div>
               <label className="block text-sm font-semibold mb-1 text-ink-soft">Due Date</label>
-              <input 
-                required 
-                type="date" 
-                name="dueDate" 
+              <input
+                required
+                type="date"
+                name="dueDate"
                 value={dueDate}
                 onChange={(e) => setDueDate(e.target.value)}
-                className="w-full border border-line rounded-[0.85rem] px-4 py-3 outline-none focus:border-maroon-bright" 
+                className="w-full min-w-0 border border-line bg-surface rounded-[0.85rem] px-4 py-3 outline-none focus:border-maroon-bright"
               />
             </div>
             <div>

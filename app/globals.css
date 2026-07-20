@@ -231,6 +231,25 @@ input {
   background-image: url("/login-bg-dark.png");
 }
 
+/* Portrait phones: the landscape photos' centers are mostly empty wall, so a
+   center crop hides the whole composition. Pull the dressed side into frame. */
+@media (max-aspect-ratio: 4/5) {
+  .login-backdrop::before {
+    background-position: 18% center; /* light: vase + journal side */
+  }
+  .dark .login-backdrop::before {
+    background-position: 82% center; /* dark: lit arch + vase side */
+  }
+}
+
+/* iOS Safari gives date inputs an intrinsic size and collapses them when empty;
+   normalize so they obey the layout like every other field. */
+input[type="date"] {
+  -webkit-appearance: none;
+  appearance: none;
+  min-height: 3.1rem;
+}
+
 .aksara-primary-button {
   background: linear-gradient(180deg, #a71657 0%, #83103e 100%);
   box-shadow:

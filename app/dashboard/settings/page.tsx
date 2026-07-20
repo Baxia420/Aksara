@@ -91,6 +91,8 @@ export default function SettingsPage() {
       setNewSemesterName("");
       setSemesterMsg("Semester created and set as active.");
       router.refresh();
+    } catch (e) {
+      setSemesterMsg(e instanceof Error ? e.message : "Could not create semester.");
     } finally {
       setSemesterBusy(false);
     }
@@ -107,6 +109,8 @@ export default function SettingsPage() {
       }
       setSemesterMsg("Switched semester — your dashboard now shows this term.");
       router.refresh();
+    } catch (e) {
+      setSemesterMsg(e instanceof Error ? e.message : "Could not switch semester.");
     } finally {
       setSemesterBusy(false);
     }
@@ -124,6 +128,8 @@ export default function SettingsPage() {
       setSemesterToDelete(null);
       setSemesterMsg("Semester deleted.");
       router.refresh();
+    } catch (e) {
+      setSemesterMsg(e instanceof Error ? e.message : "Could not delete semester.");
     } finally {
       setSemesterBusy(false);
     }

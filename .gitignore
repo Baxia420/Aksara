@@ -49,3 +49,9 @@ dev.err
 # typescript
 *.tsbuildinfo
 next-env.d.ts
+
+# Local AI-assistant/tooling notes — not part of the published repo
+CLAUDE.md
+AGENTS.md
+CHANGELOG.md
+/Login page photo/

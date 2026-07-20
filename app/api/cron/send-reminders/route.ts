@@ -59,6 +59,16 @@ export async function GET(req: NextRequest) {
   let sent = 0;
   let usersNotified = 0;
 
+  // Active semester per user. Errors (e.g. migration not run yet) simply mean
+  // no scoping — every task is considered, as before.
+  const { data: semesterRows } = await admin
+    .from("semesters")
+    .select("id, user_id, is_active");
+  const activeSemesterByUser = new Map<string, string>();
+  for (const s of semesterRows ?? []) {
+    if (s.is_active) activeSemesterByUser.set(s.user_id, s.id);
+  }
+
   for (const user of usersData.users) {
     const meta = (user.user_metadata ?? {}) as Record<string, unknown>;
     if (meta.reminders_enabled === false) continue;
@@ -71,11 +81,18 @@ export async function GET(req: NextRequest) {
       : [];
     if (subs.length === 0 || leadTimes.length === 0) continue;
 
-    const [{ data: tasks }, { data: comps }] = await Promise.all([
+    const [{ data: allTasks }, { data: comps }] = await Promise.all([
       admin.from("tasks").select("*").or(`user_id.eq.${user.id},is_public.eq.true`),
       admin.from("user_task_completions").select("task_id").eq("user_id", user.id),
     ]);
     const completed = new Set((comps ?? []).map((c) => c.task_id));
+
+    // Only remind about the user's active semester (unscoped rows always count).
+    const activeSemester = activeSemesterByUser.get(user.id);
+    const tasks = (allTasks ?? []).filter(
+      (t) =>
+        !activeSemester || !t.semester_id || t.semester_id === activeSemester,
+    );
 
     const sentLog: Record<string, number> =
       meta.reminder_sent && typeof meta.reminder_sent === "object"

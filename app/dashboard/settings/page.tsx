@@ -3,8 +3,14 @@
 import Link from "next/link";
 import { useRouter } from "next/navigation";
 import { use, useState } from "react";
-import { ArrowLeft, Bell, GraduationCap } from "lucide-react";
-import { updateProfile, updateReminderPreferences } from "@/app/actions";
+import { ArrowLeft, Bell, CalendarRange, GraduationCap } from "lucide-react";
+import {
+  createSemester,
+  deleteSemester,
+  switchSemester,
+  updateProfile,
+  updateReminderPreferences,
+} from "@/app/actions";
 import { useDashboardDataPromise } from "@/components/dashboard/DashboardDataProvider";
 import { ThemeToggle } from "@/components/ThemeToggle";
 import { NotificationToggle } from "@/components/NotificationToggle";
@@ -15,6 +21,13 @@ export default function SettingsPage() {
   const data = use(useDashboardDataPromise());
   const profile = data?.user ?? null;
   const prefs = data?.reminderPreferences ?? { enabled: true, leadTimes: [] };
+  const semesters = data?.semesters ?? [];
+
+  // Semesters
+  const [newSemesterName, setNewSemesterName] = useState("");
+  const [semesterBusy, setSemesterBusy] = useState(false);
+  const [semesterMsg, setSemesterMsg] = useState<string | null>(null);
+  const [semesterToDelete, setSemesterToDelete] = useState<string | null>(null);
 
   // Account form
   const [firstName, setFirstName] = useState(profile?.firstName ?? "");
@@ -63,6 +76,56 @@ export default function SettingsPage() {
       setRemindersMsg(e instanceof Error ? e.message : "Failed to save.");
     } finally {
       setRemindersSaving(false);
+    }
+  }
+
+  async function handleCreateSemester() {
+    setSemesterBusy(true);
+    setSemesterMsg(null);
+    try {
+      const result = await createSemester(newSemesterName);
+      if ("error" in result) {
+        setSemesterMsg(result.error);
+        return;
+      }
+      setNewSemesterName("");
+      setSemesterMsg("Semester created and set as active.");
+      router.refresh();
+    } finally {
+      setSemesterBusy(false);
+    }
+  }
+
+  async function handleSwitchSemester(id: string) {
+    setSemesterBusy(true);
+    setSemesterMsg(null);
+    try {
+      const result = await switchSemester(id);
+      if ("error" in result) {
+        setSemesterMsg(result.error);
+        return;
+      }
+      setSemesterMsg("Switched semester — your dashboard now shows this term.");
+      router.refresh();
+    } finally {
+      setSemesterBusy(false);
+    }
+  }
+
+  async function handleDeleteSemester(id: string) {
+    setSemesterBusy(true);
+    setSemesterMsg(null);
+    try {
+      const result = await deleteSemester(id);
+      if ("error" in result) {
+        setSemesterMsg(result.error);
+        return;
+      }
+      setSemesterToDelete(null);
+      setSemesterMsg("Semester deleted.");
+      router.refresh();
+    } finally {
+      setSemesterBusy(false);
     }
   }
 
@@ -171,6 +234,118 @@ export default function SettingsPage() {
         </div>
 
         <NotificationToggle />
+      </section>
+
+      {/* Semesters */}
+      <section className="aksara-card mt-6 p-7">
+        <div className="flex items-center gap-3">
+          <div className="flex size-10 items-center justify-center rounded-xl bg-maroon/10 text-maroon">
+            <CalendarRange className="size-5" />
+          </div>
+          <div>
+            <h2 className="text-xl font-bold text-ink">Semesters</h2>
+            <p className="text-sm text-ink-muted">
+              Each term keeps its own courses and tasks. Switch back any time to
+              revisit a finished semester.
+            </p>
+          </div>
+        </div>
+
+        <div className="mt-6 space-y-3">
+          {semesters.length === 0 ? (
+            <p className="rounded-[0.85rem] border border-line bg-surface-soft px-4 py-3 text-sm text-ink-muted">
+              No semesters yet — create your first one below.
+            </p>
+          ) : (
+            semesters.map((sem) => (
+              <div
+                key={sem.id}
+                className="flex flex-wrap items-center justify-between gap-3 rounded-[1rem] border border-line bg-surface p-4"
+              >
+                <div className="min-w-0">
+                  <p className="font-semibold text-ink">{sem.name}</p>
+                  <p className="text-xs text-ink-soft">
+                    Created{" "}
+                    {new Date(sem.createdAt).toLocaleDateString(undefined, {
+                      day: "numeric",
+                      month: "short",
+                      year: "numeric",
+                    })}
+                  </p>
+                </div>
+                <div className="flex shrink-0 items-center gap-2">
+                  {sem.isActive ? (
+                    <span className="rounded-full bg-brand px-3 py-1.5 text-xs font-semibold text-white">
+                      Active
+                    </span>
+                  ) : (
+                    <button
+                      type="button"
+                      disabled={semesterBusy}
+                      onClick={() => handleSwitchSemester(sem.id)}
+                      className="aksara-chip px-4 py-1.5 text-xs font-semibold disabled:opacity-60"
+                    >
+                      Switch to
+                    </button>
+                  )}
+                  {semesterToDelete === sem.id ? (
+                    <span className="flex items-center gap-2">
+                      <span className="text-xs font-semibold text-maroon-bright">
+                        Delete its tasks &amp; courses?
+                      </span>
+                      <button
+                        type="button"
+                        disabled={semesterBusy}
+                        onClick={() => handleDeleteSemester(sem.id)}
+                        className="rounded-lg bg-brand-bright px-3 py-1.5 text-xs font-semibold text-white transition hover:bg-brand disabled:opacity-60"
+                      >
+                        Yes
+                      </button>
+                      <button
+                        type="button"
+                        disabled={semesterBusy}
+                        onClick={() => setSemesterToDelete(null)}
+                        className="px-2 py-1.5 text-xs font-semibold text-ink-soft transition hover:text-ink"
+                      >
+                        No
+                      </button>
+                    </span>
+                  ) : (
+                    <button
+                      type="button"
+                      disabled={semesterBusy}
+                      onClick={() => setSemesterToDelete(sem.id)}
+                      className="rounded-lg border border-maroon-bright/30 px-3 py-1.5 text-xs font-semibold text-maroon-bright transition hover:border-maroon-bright hover:bg-maroon-bright/5 disabled:opacity-60"
+                    >
+                      Delete
+                    </button>
+                  )}
+                </div>
+              </div>
+            ))
+          )}
+        </div>
+
+        <div className="mt-5 flex gap-3">
+          <input
+            value={newSemesterName}
+            onChange={(e) => setNewSemesterName(e.target.value)}
+            placeholder="e.g. Semester 1, 2026/27"
+            className="w-full min-w-0 rounded-[0.85rem] border border-line px-4 py-3 outline-none focus:border-maroon-bright"
+          />
+          <button
+            type="button"
+            disabled={semesterBusy || !newSemesterName.trim()}
+            onClick={handleCreateSemester}
+            className="aksara-primary-button shrink-0 rounded-[0.85rem] px-5 py-2.5 font-semibold text-white disabled:opacity-70"
+          >
+            {semesterBusy ? "Working…" : "Create"}
+          </button>
+        </div>
+
+        {semesterMsg ? (
+          <p className="mt-3 text-sm text-maroon-soft">{semesterMsg}</p>
+        ) : null}
       </section>
 
       {/* Account */}

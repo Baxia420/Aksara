@@ -7,11 +7,15 @@ live in git history / commit messages, not here.
 
 ## Per-user semesters (the big one)
 
-**Status: DEFERRED — single user today.** Aksara currently has exactly one real
-user (the owner). Rebuilding the whole data model for multi-user semesters now
-would be effort spent on capacity nobody uses yet. This is a passion project and
-may never grow past one user — so we keep the plan on record and revisit **only
-if the user base actually grows.**
+**Status: CORE SLICE SHIPPED (2026-07-20) — multi-user extras still deferred.**
+The owner needs semesters *personally* (Sem 2 ended, Sem 3 starting), so the
+1 → 3 → 5 slice below is built: `semesters` table + `semester_id` columns
+(migration in `supabase/migrations/20260720_semesters.sql`, run manually in the
+Supabase SQL editor), a Semesters section in Settings (create / switch /
+delete), semester-scoped dashboard + reminder cron, and new tasks/courses
+attaching to the active term. The app is backwards-compatible: until the
+migration runs it behaves exactly as before. Phases 2 and 4 (admin-model
+removal, signup onboarding) remain deferred until the user base grows.
 
 **Decision already made (2026-07-18):** if/when we build this, go **fully
 per-user** and **remove the admin/shared model entirely** (`ADMIN_EMAIL`,

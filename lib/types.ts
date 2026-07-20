@@ -22,6 +22,7 @@ export type AcademicTask = {
   createdAt?: string | null;
   userId?: string;
   isPublic?: boolean;
+  semesterId?: string | null;
 };
 
 export type AcademicCourse = {
@@ -30,6 +31,14 @@ export type AcademicCourse = {
   title: string;
   colorIndex: number;
   isPublic?: boolean;
+  semesterId?: string | null;
+};
+
+export type Semester = {
+  id: string;
+  name: string;
+  isActive: boolean;
+  createdAt: string;
 };
 
 export type FocusLog = {
@@ -76,5 +85,10 @@ export type DashboardData = {
   tasks: AcademicTask[];
   courses: AcademicCourse[];
   focusLogs: FocusLog[];
+  // All of the user's semesters (empty until the semesters migration has run).
+  semesters: Semester[];
+  // The semester the dashboard is currently scoped to, or null in legacy
+  // (pre-migration / no-semesters) mode where everything is shown.
+  activeSemesterId: string | null;
   syncedAt: string;
 };

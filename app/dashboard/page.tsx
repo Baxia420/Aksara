@@ -1,6 +1,5 @@
 "use client";
 
-import Link from "next/link";
 import { useRouter } from "next/navigation";
 import { use, useEffect, useMemo, useState, useTransition, useCallback } from "react";
 import { toggleTaskCompletion, signOutUser } from "@/app/actions";
@@ -9,9 +8,6 @@ import { ManageCoursesModal } from "@/components/ManageCoursesModal";
 import {
   BookOpen,
   CalendarDays,
-  ChevronLeft,
-  ChevronRight,
-  GraduationCap,
   Home,
   ListTodo,
   Pencil,
@@ -20,6 +16,13 @@ import {
 } from "lucide-react";
 import { FocusTimerView } from "@/components/FocusTimerView";
 import { useDashboardDataPromise } from "@/components/dashboard/DashboardDataProvider";
+import { BrandGlyph, BrandLockup } from "@/components/dashboard/Brand";
+import { CalendarWidget } from "@/components/dashboard/CalendarWidget";
+import { CoursePill } from "@/components/dashboard/CoursePill";
+import { MobileTaskCard } from "@/components/dashboard/MobileTaskCard";
+import { MobileTopBar } from "@/components/dashboard/MobileTopBar";
+import { ProfileMenu } from "@/components/dashboard/ProfileMenu";
+import { TaskTable } from "@/components/dashboard/TaskTable";
 import { useIsDesktop } from "@/lib/useIsDesktop";
 import type {
   AcademicCourse,
@@ -36,7 +39,6 @@ import {
   formatDueDateTime,
   formatFullDate,
   formatMonthShort,
-  formatMonthYear,
   formatRelativeLabel,
   formatWeekdayLong,
   formatWeekdayShort,
@@ -44,8 +46,6 @@ import {
   getGreeting,
   getTaskAccent,
   getTaskTone,
-  markerClassNames,
-  markerLabels,
   toDate,
 } from "@/lib/dateUtils";
 
@@ -83,403 +83,6 @@ const desktopSidebar = [
   label: string;
   title: string;
 }>;
-
-function BrandGlyph({ size = "default" }: { size?: "default" | "small" }) {
-  const classes =
-    size === "small"
-      ? "size-11 rounded-[1.1rem]"
-      : "size-14 rounded-[1.15rem]";
-
-  return (
-    <div
-      className={`${classes} flex items-center justify-center bg-brand text-gold shadow-[0_12px_28px_rgba(131,16,62,0.18)]`}
-    >
-      <GraduationCap className={size === "small" ? "size-5" : "size-6"} />
-    </div>
-  );
-}
-
-function BrandLockup() {
-  return (
-    <Link href="/" className="flex items-center gap-4">
-      <BrandGlyph />
-      <div>
-        <p className="aksara-serif text-[2rem] font-semibold leading-none text-maroon">
-          Aksara
-        </p>
-        <p className="aksara-mono mt-1 text-[0.58rem] text-maroon-soft">
-          Academic OS
-        </p>
-      </div>
-    </Link>
-  );
-}
-
-function CoursePill({
-  course,
-  className,
-}: {
-  course: string;
-  className: string;
-}) {
-  return (
-    <span
-      className={`inline-flex items-center rounded-full px-2.5 py-1 text-[0.72rem] font-semibold tracking-[0.04em] ${className}`}
-    >
-      {course}
-    </span>
-  );
-}
-
-function CalendarWidget({
-  activeDay,
-  compact = false,
-  markers,
-  monthDate,
-  onNextMonth,
-  onPreviousMonth,
-  tasksByDay,
-}: {
-  activeDay: null | number;
-  compact?: boolean;
-  markers: Record<number, MarkerTone[]>;
-  monthDate: Date;
-  onNextMonth: () => void;
-  onPreviousMonth: () => void;
-  tasksByDay: Record<number, AcademicTask[]>;
-}) {
-  const dayNames = ["S", "M", "T", "W", "T", "F", "S"];
-  const year = monthDate.getFullYear();
-  const month = monthDate.getMonth();
-  const firstDay = new Date(year, month, 1).getDay();
-  const daysInMonth = new Date(year, month + 1, 0).getDate();
-  const cells = Array.from({ length: firstDay + daysInMonth }, (_, index) => {
-    if (index < firstDay) {
-      return null;
-    }
-
-    return index - firstDay + 1;
-  });
-
-  const headingClass = compact
-    ? "text-[2.35rem] leading-none"
-    : "text-[3.1rem] leading-none";
-
-  return (
-    <div className={compact ? "aksara-card p-5" : "aksara-card p-7"}>
-      <div className="flex items-start justify-between gap-4">
-        <div>
-          <h2 className={`aksara-serif ${headingClass} text-ink`}>
-            {formatMonthYear(monthDate).split(" ")[0]}{" "}
-            <span className="text-maroon-bright">{year}</span>
-          </h2>
-          <p className="aksara-mono mt-2 text-[0.58rem] text-ink-soft">
-            Live schedule month
-          </p>
-        </div>
-        <div className="flex items-center gap-2">
-          <button
-            type="button"
-            onClick={onPreviousMonth}
-            className="aksara-icon-button size-9 rounded-full transition hover:border-line hover:bg-surface"
-            aria-label="Previous month"
-          >
-            <ChevronLeft className="size-4" />
-          </button>
-          <button
-            type="button"
-            onClick={onNextMonth}
-            className="aksara-icon-button size-9 rounded-full transition hover:border-line hover:bg-surface"
-            aria-label="Next month"
-          >
-            <ChevronRight className="size-4" />
-          </button>
-        </div>
-      </div>
-
-      <div className="mt-6 grid grid-cols-7 gap-y-4 text-center">
-        {dayNames.map((day, dayIndex) => (
-          <span
-            key={`${day}-${dayIndex}`}
-            className="aksara-mono text-[0.55rem] text-ink-soft"
-          >
-            {day}
-          </span>
-        ))}
-
-        {cells.map((day, index) => {
-          const dayMarkers = day ? markers[day] ?? [] : [];
-          const dayTasks = day ? tasksByDay[day] ?? [] : [];
-          const isActive = day === activeDay;
-          const hasDayTasks = dayTasks.length > 0;
-          const dateLabel = day
-            ? new Intl.DateTimeFormat("en-GB", {
-                day: "2-digit",
-                month: "short",
-                weekday: "short",
-              }).format(new Date(year, month, day))
-            : "";
-
-          return (
-            <div
-              key={day ?? `blank-${index}`}
-              className="flex min-h-12 items-center justify-center"
-            >
-              {day ? (
-                <div className="group relative flex h-11 w-11 flex-col items-center justify-center">
-                  <button
-                    type="button"
-                    aria-label={
-                      hasDayTasks
-                        ? `${dateLabel}: ${dayTasks
-                            .map((task) => `${task.courseCode} ${task.title}`)
-                            .join(", ")}`
-                        : dateLabel
-                    }
-                    className={`flex h-10 w-10 items-center justify-center rounded-[1rem] text-base font-semibold ${
-                      isActive
-                        ? "bg-brand-bright text-white shadow-[0_10px_20px_rgba(131,16,62,0.22)]"
-                        : "text-ink-body"
-                    } ${
-                      hasDayTasks
-                        ? "cursor-pointer transition hover:bg-surface-soft hover:text-maroon-bright focus-visible:outline focus-visible:outline-2 focus-visible:outline-offset-2 focus-visible:outline-maroon-bright"
-                        : "cursor-default"
-                    }`}
-                  >
-                    {day}
-                  </button>
-                  <div className="absolute bottom-0 flex items-center gap-1">
-                    {dayMarkers.map((marker, markerIndex) => (
-                      <span
-                        key={`${day}-${marker}-${markerIndex}`}
-                        className={`size-1.5 rounded-full ${markerClassNames[marker]}`}
-                      />
-                    ))}
-                  </div>
-                  {hasDayTasks ? (
-                    <div className="pointer-events-none absolute left-1/2 top-12 z-30 hidden w-64 max-w-[calc(100vw-3rem)] -translate-x-1/2 rounded-[1.15rem] border border-line bg-surface p-4 text-left shadow-[0_18px_34px_rgba(131,16,62,0.14)] group-hover:block group-focus-within:block">
-                      <p className="aksara-mono text-[0.52rem] text-maroon-soft">
-                        {dateLabel}
-                      </p>
-                      <div className="mt-3 space-y-3">
-                        {dayTasks.map((task) => {
-                          const tone = getTaskTone(task);
-
-                          return (
-                            <div
-                              key={`${task.title}-${task.dueDateIso}`}
-                              className="border-l-2 border-[#ead4dc] pl-3"
-                            >
-                              <div className="flex items-center justify-between gap-3">
-                                <span className="text-xs font-semibold text-maroon-bright">
-                                  {task.courseCode}
-                                </span>
-                                <span className="flex items-center gap-1.5 text-xs text-ink-soft">
-                                  <span
-                                    className={`size-1.5 rounded-full ${markerClassNames[tone]}`}
-                                  />
-                                  {markerLabels[tone]}
-                                </span>
-                              </div>
-                              <p className="mt-1 text-sm font-semibold leading-5 text-ink">
-                                {task.title}
-                              </p>
-                              <p className="mt-1 text-xs text-ink-soft">
-                                {task.type} / {formatDueDateTime(task)}
-                              </p>
-                            </div>
-                          );
-                        })}
-                      </div>
-                    </div>
-                  ) : null}
-                </div>
-              ) : (
-                <span className="block h-11 w-11" />
-              )}
-            </div>
-          );
-        })}
-      </div>
-
-      <div className="aksara-divider mt-6" />
-      <div className="mt-4 flex flex-wrap gap-5 text-sm text-ink-soft">
-        <span className="flex items-center gap-2">
-          <span className="size-2 rounded-full bg-[#a91c58]" />
-          Overdue
-        </span>
-        <span className="flex items-center gap-2">
-          <span className="size-2 rounded-full bg-[#d89d2c]" />
-          Due soon
-        </span>
-        <span className="flex items-center gap-2">
-          <span className="size-2 rounded-full bg-[#c9839d]" />
-          Upcoming
-        </span>
-      </div>
-    </div>
-  );
-}
-
-function getInitials(profile: { firstName?: string; lastName?: string; name?: string; email?: string } | null) {
-  if (!profile) return "•";
-  if (profile.firstName && profile.lastName) {
-    return `${profile.firstName.charAt(0)}${profile.lastName.charAt(0)}`.toUpperCase();
-  }
-  if (profile.firstName) {
-    return profile.firstName.substring(0, 2).toUpperCase();
-  }
-  if (profile.name) {
-    const parts = profile.name.trim().split(/\s+/);
-    if (parts.length >= 2) {
-      return `${parts[0].charAt(0)}${parts[1].charAt(0)}`.toUpperCase();
-    }
-    return parts[0].substring(0, 2).toUpperCase();
-  }
-  if (profile.email) {
-    return profile.email.charAt(0).toUpperCase();
-  }
-  return "•";
-}
-
-function MobileTopBar({
-  meta,
-  title,
-  accent,
-  userProfile = null,
-  onOpenSettings = () => {},
-  onLogout = () => {},
-}: {
-  accent?: string;
-  meta: string;
-  title: string;
-  userProfile?: { email: string; name: string; firstName?: string; lastName?: string } | null;
-  onOpenSettings?: () => void;
-  onLogout?: () => void;
-}) {
-  const [isProfileOpen, setIsProfileOpen] = useState(false);
-
-  return (
-    <div>
-      <div className="flex items-start justify-between gap-4">
-        <div>
-          <p className="aksara-mono text-[0.6rem] text-maroon-soft">{meta}</p>
-          <h1 className="aksara-serif mt-2 text-[3.45rem] leading-[0.82] tracking-[-0.04em] text-ink">
-            {title}
-            {accent ? (
-              <>
-                <br />
-                <span className="italic text-maroon-soft">{accent}</span>
-              </>
-            ) : null}
-          </h1>
-        </div>
-        <div className="flex items-center gap-3 pt-3">
-          <div className="relative">
-            <button
-              onClick={() => setIsProfileOpen((prev) => !prev)}
-              aria-label="Account menu"
-              aria-haspopup="menu"
-              aria-expanded={isProfileOpen}
-              className="flex size-12 cursor-pointer items-center justify-center rounded-full bg-gold text-sm font-bold text-[#7b173d] shadow-[0_10px_24px_rgba(226,162,47,0.28)] hover:brightness-105 active:scale-95 transition"
-            >
-              {getInitials(userProfile)}
-            </button>
-            {isProfileOpen && (
-              <div className="absolute right-0 mt-2 w-52 rounded-2xl border border-[rgba(155,112,122,0.2)] bg-surface p-2 shadow-xl z-50 animate-in fade-in slide-in-from-top-2 duration-150">
-                <div className="px-4 py-2 text-xs font-semibold text-ink-soft border-b border-line mb-1 text-left">
-                  Signed in as <br />
-                  <span className="text-ink break-all">{userProfile?.email}</span>
-                </div>
-                <button
-                  onClick={() => {
-                    setIsProfileOpen(false);
-                    onOpenSettings();
-                  }}
-                  className="w-full text-left px-4 py-2.5 text-sm font-semibold text-ink-muted hover:bg-maroon/5 hover:text-maroon rounded-xl transition"
-                >
-                  Settings
-                </button>
-                <button
-                  onClick={() => {
-                    setIsProfileOpen(false);
-                    onLogout();
-                  }}
-                  className="w-full text-left px-4 py-2.5 text-sm font-semibold text-rose-700 hover:bg-rose-50 rounded-xl transition"
-                >
-                  Log Out
-                </button>
-              </div>
-            )}
-          </div>
-        </div>
-      </div>
-    </div>
-  );
-}
-
-function MobileTaskCard({
-  pillClassName,
-  task,
-  onToggle,
-  onEdit,
-}: {
-  pillClassName: string;
-  task: AcademicTask;
-  onToggle?: () => void;
-  onEdit?: () => void;
-}) {
-  return (
-    <article className="aksara-card rounded-[1.8rem] px-5 py-5">
-      <div className="flex items-center justify-between gap-3">
-        <CoursePill course={task.courseCode} className={pillClassName} />
-        <p className={`text-sm font-semibold ${getTaskAccent(task)}`}>
-          {formatRelativeLabel(task)}
-        </p>
-      </div>
-      <h3 className="mt-4 text-[1.38rem] font-semibold leading-8 text-ink">
-        {task.title}
-      </h3>
-      <div className="mt-3 text-sm text-ink-soft">{task.courseTitle}</div>
-      <div className="mt-4 flex items-center justify-between gap-4 text-sm text-ink-soft">
-        <p>{formatDueDateTime(task)}</p>
-        <div className="flex items-center gap-4">
-          <p className="font-semibold text-maroon-soft">
-            {task.completed ? "Completed" : task.type}
-          </p>
-          {onEdit ? (
-            <button
-              type="button"
-              onClick={onEdit}
-              aria-label="Edit task"
-              className="p-1 text-ink-soft transition-colors hover:text-maroon"
-            >
-              <Pencil className="size-4.5" />
-            </button>
-          ) : null}
-          {onToggle ? (
-            <button
-              type="button"
-              onClick={onToggle}
-              aria-label={task.completed ? "Mark task incomplete" : "Mark task complete"}
-              className={`flex size-7 items-center justify-center rounded-[0.5rem] border-[2.5px] transition-colors ${
-                task.completed
-                  ? "border-maroon bg-brand text-white"
-                  : "border-line bg-surface hover:border-maroon"
-              }`}
-            >
-              {task.completed && (
-                <svg className="size-4" fill="none" viewBox="0 0 24 24" stroke="currentColor" strokeWidth={3.5}>
-                  <path strokeLinecap="round" strokeLinejoin="round" d="M5 13l4 4L19 7" />
-                </svg>
-              )}
-            </button>
-          ) : null}
-        </div>
-      </div>
-    </article>
-  );
-}
 
 export default function DashboardPage() {
   const router = useRouter();
@@ -528,7 +131,6 @@ export default function DashboardPage() {
     setFocusLogs(dashboardData?.focusLogs ?? []);
   }, [dashboardData]);
 
-  const [isProfileOpen, setIsProfileOpen] = useState(false);
   const [isManageCoursesOpen, setIsManageCoursesOpen] = useState(false);
   const [taskToEdit, setTaskToEdit] = useState<AcademicTask | null>(null);
   const [isModalOpen, setIsModalOpen] = useState(false);
@@ -934,40 +536,11 @@ export default function DashboardPage() {
                 >
                   <Settings className="size-5" />
                 </button>
-                <div className="relative">
-                  <button
-                    onClick={() => setIsProfileOpen((prev) => !prev)}
-                    aria-label="Account menu"
-                    aria-haspopup="menu"
-                    aria-expanded={isProfileOpen}
-                    className="flex size-14 cursor-pointer items-center justify-center rounded-full border border-line bg-surface text-sm font-bold text-maroon-bright shadow-[0_10px_24px_rgba(131,16,62,0.07)] hover:border-maroon-bright transition"
-                  >
-                    {getInitials(userProfile)}
-                  </button>
-                  {isProfileOpen && (
-                    <div className="absolute right-0 mt-2 w-56 rounded-2xl border border-[rgba(155,112,122,0.2)] bg-surface p-2 shadow-xl z-50 animate-in fade-in slide-in-from-top-2 duration-150">
-                      <div className="px-4 py-2 text-xs font-semibold text-ink-soft border-b border-line mb-1 text-left">
-                        Signed in as <br />
-                        <span className="text-ink break-all">{userProfile?.email}</span>
-                      </div>
-                      <button
-                        onClick={() => {
-                          setIsProfileOpen(false);
-                          openSettings();
-                        }}
-                        className="w-full text-left px-4 py-2.5 text-sm font-semibold text-ink-muted hover:bg-maroon/5 hover:text-maroon rounded-xl transition"
-                      >
-                        Settings
-                      </button>
-                      <button
-                        onClick={handleLogout}
-                        className="w-full text-left px-4 py-2.5 text-sm font-semibold text-rose-700 hover:bg-rose-50 rounded-xl transition"
-                      >
-                        Log Out
-                      </button>
-                    </div>
-                  )}
-                </div>
+                <ProfileMenu
+                  userProfile={userProfile}
+                  onOpenSettings={openSettings}
+                  onLogout={handleLogout}
+                />
               </div>
             </header>
 
@@ -1151,95 +724,17 @@ export default function DashboardPage() {
                   </div>
 
                   <div className="mt-6">
-                    <div className="grid grid-cols-[minmax(0,2.3fr)_1.2fr_1fr_1fr_1fr_min-content] gap-6 px-2 pb-4 text-[0.68rem] font-semibold uppercase tracking-[0.26em] text-ink-soft">
-                      <span>Title</span>
-                      <span>Course</span>
-                      <span>Type</span>
-                      <span>Due</span>
-                      <span className="text-right">Time Left</span>
-                      <span className="text-right">Status</span>
-                    </div>
-                    <div className="aksara-divider" />
-                    <div className="mt-2 space-y-1">
-                      {filteredTasks.length > 0 ? (
-                        filteredTasks.map((task) => (
-                          <div
-                            key={`${task.title}-${task.dueDateIso}`}
-                            className="grid grid-cols-[minmax(0,2.3fr)_1.2fr_1fr_1fr_1fr_min-content] gap-6 rounded-[1.5rem] px-2 py-5 transition hover:bg-surface/45"
-                          >
-                            <div>
-                              <h3 className="text-[1.45rem] font-semibold leading-8 text-ink">
-                                {task.title}
-                              </h3>
-                              <p className="mt-1 text-base text-ink-soft">
-                                {task.courseTitle}
-                              </p>
-                            </div>
-                            <div className="pt-1">
-                              <CoursePill
-                                course={task.courseCode}
-                                className={
-                                  courseStyles.get(task.courseCode) ??
-                                  coursePillClasses[0]
-                                }
-                              />
-                            </div>
-                            <p className="pt-2 text-lg text-ink-body">{task.type}</p>
-                            <div className="pt-2">
-                              <p className="text-lg font-semibold text-ink-body">
-                                {formatFullDate(task.dueDateIso)}
-                              </p>
-                              {task.dueTime ? (
-                                <p className="mt-1 text-sm font-semibold text-maroon-soft">
-                                  {task.dueTime}
-                                </p>
-                              ) : null}
-                            </div>
-                            <div className="pt-2 text-right">
-                              <span className={`text-lg font-semibold ${getTaskAccent(task, currentTime)} whitespace-nowrap`}>
-                                {formatRelativeLabel(task, currentTime)}
-                              </span>
-                            </div>
-                            <div className="pt-2 flex items-center justify-end gap-3.5">
-                              {canEditTask(task) && (
-                                <button
-                                  type="button"
-                                  onClick={() => {
-                                    setTaskToEdit(task);
-                                    setIsModalOpen(true);
-                                  }}
-                                  className="text-ink-soft hover:text-maroon transition-colors p-1"
-                                  title="Edit Task"
-                                  aria-label="Edit task"
-                                >
-                                  <Pencil className="size-4.5" />
-                                </button>
-                              )}
-                              <button
-                                type="button"
-                                onClick={() => handleToggle(task.id, task.completed)}
-                                aria-label={task.completed ? "Mark task incomplete" : "Mark task complete"}
-                                className={`flex size-[1.35rem] items-center justify-center rounded-[0.4rem] border-[2.5px] transition-colors ${
-                                  task.completed 
-                                    ? "border-maroon bg-brand text-white" 
-                                    : "border-line bg-surface hover:border-maroon"
-                                }`}
-                              >
-                                {task.completed && (
-                                  <svg className="size-3.5" fill="none" viewBox="0 0 24 24" stroke="currentColor" strokeWidth={3.5}>
-                                    <path strokeLinecap="round" strokeLinejoin="round" d="M5 13l4 4L19 7" />
-                                  </svg>
-                                )}
-                              </button>
-                            </div>
-                          </div>
-                        ))
-                      ) : (
-                        <div className="px-2 py-6 text-lg text-ink-soft">
-                          No tasks match this filter.
-                        </div>
-                      )}
-                    </div>
+                    <TaskTable
+                      tasks={filteredTasks}
+                      courseStyles={courseStyles}
+                      currentTime={currentTime}
+                      canEditTask={canEditTask}
+                      onEditTask={(task) => {
+                        setTaskToEdit(task);
+                        setIsModalOpen(true);
+                      }}
+                      onToggleTask={(task) => handleToggle(task.id, task.completed)}
+                    />
                   </div>
                 </article>
               </section>
@@ -1444,95 +939,17 @@ export default function DashboardPage() {
                   </div>
 
                   <div className="mt-8">
-                    <div className="grid grid-cols-[minmax(0,2.3fr)_1.2fr_1fr_1fr_1fr_min-content] gap-6 px-2 pb-4 text-[0.68rem] font-semibold uppercase tracking-[0.26em] text-ink-soft">
-                      <span>Title</span>
-                      <span>Course</span>
-                      <span>Type</span>
-                      <span>Due</span>
-                      <span className="text-right">Time Left</span>
-                      <span className="text-right">Status</span>
-                    </div>
-                    <div className="aksara-divider" />
-                    <div className="mt-2 space-y-1">
-                      {filteredTasks.length > 0 ? (
-                        filteredTasks.map((task) => (
-                          <div
-                            key={`${task.title}-${task.dueDateIso}`}
-                            className="grid grid-cols-[minmax(0,2.3fr)_1.2fr_1fr_1fr_1fr_min-content] gap-6 rounded-[1.5rem] px-2 py-5 transition hover:bg-surface/45"
-                          >
-                            <div>
-                              <h3 className="text-[1.45rem] font-semibold leading-8 text-ink">
-                                {task.title}
-                              </h3>
-                              <p className="mt-1 text-base text-ink-soft">
-                                {task.courseTitle}
-                              </p>
-                            </div>
-                            <div className="pt-1">
-                              <CoursePill
-                                course={task.courseCode}
-                                className={
-                                  courseStyles.get(task.courseCode) ??
-                                  coursePillClasses[0]
-                                }
-                              />
-                            </div>
-                            <p className="pt-2 text-lg text-ink-body">{task.type}</p>
-                            <div className="pt-2">
-                              <p className="text-lg font-semibold text-ink-body">
-                                {formatFullDate(task.dueDateIso)}
-                              </p>
-                              {task.dueTime ? (
-                                <p className="mt-1 text-sm font-semibold text-maroon-soft">
-                                  {task.dueTime}
-                                </p>
-                              ) : null}
-                            </div>
-                            <div className="pt-2 text-right">
-                              <span className={`text-lg font-semibold ${getTaskAccent(task, currentTime)} whitespace-nowrap`}>
-                                {formatRelativeLabel(task, currentTime)}
-                              </span>
-                            </div>
-                            <div className="pt-2 flex items-center justify-end gap-3.5">
-                              {canEditTask(task) && (
-                                <button
-                                  type="button"
-                                  onClick={() => {
-                                    setTaskToEdit(task);
-                                    setIsModalOpen(true);
-                                  }}
-                                  className="text-ink-soft hover:text-maroon transition-colors p-1"
-                                  title="Edit Task"
-                                  aria-label="Edit task"
-                                >
-                                  <Pencil className="size-4.5" />
-                                </button>
-                              )}
-                              <button
-                                type="button"
-                                onClick={() => handleToggle(task.id, task.completed)}
-                                aria-label={task.completed ? "Mark task incomplete" : "Mark task complete"}
-                                className={`flex size-[1.35rem] items-center justify-center rounded-[0.4rem] border-[2.5px] transition-colors ${
-                                  task.completed 
-                                    ? "border-maroon bg-brand text-white" 
-                                    : "border-line bg-surface hover:border-maroon"
-                                }`}
-                              >
-                                {task.completed && (
-                                  <svg className="size-3.5" fill="none" viewBox="0 0 24 24" stroke="currentColor" strokeWidth={3.5}>
-                                    <path strokeLinecap="round" strokeLinejoin="round" d="M5 13l4 4L19 7" />
-                                  </svg>
-                                )}
-                              </button>
-                            </div>
-                          </div>
-                        ))
-                      ) : (
-                        <div className="px-2 py-6 text-lg text-ink-soft">
-                          No tasks match this filter.
-                        </div>
-                      )}
-                    </div>
+                    <TaskTable
+                      tasks={filteredTasks}
+                      courseStyles={courseStyles}
+                      currentTime={currentTime}
+                      canEditTask={canEditTask}
+                      onEditTask={(task) => {
+                        setTaskToEdit(task);
+                        setIsModalOpen(true);
+                      }}
+                      onToggleTask={(task) => handleToggle(task.id, task.completed)}
+                    />
                   </div>
                 </article>
               ) : null}

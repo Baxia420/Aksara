@@ -48,6 +48,26 @@ export type FocusLog = {
   duration: number;
   type: "focus" | "shortBreak" | "longBreak";
   createdAt: string;
+  sessionId?: string | null;
+  courseId?: string | null;
+  courseCode?: string | null;
+  courseTitle?: string | null;
+  taskTitle?: string | null;
+  semesterId?: string | null;
+  timerStyle?: "pomodoro" | "stopwatch";
+  intervals?: FocusInterval[];
+};
+
+export type FocusInterval = { start: string; end: string };
+
+export type StudySessionInput = {
+  sessionId: string;
+  duration: number;
+  type: FocusLog["type"];
+  courseId: string | null;
+  taskId: string | null;
+  timerStyle: "pomodoro" | "stopwatch";
+  intervals: FocusInterval[];
 };
 
 export type UserProfile = {

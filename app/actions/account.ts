@@ -3,32 +3,6 @@
 import { createClient } from "@/lib/supabase/server";
 import { revalidatePath } from "next/cache";
 
-export async function logFocusSession(
-  duration: number,
-  type: "focus" | "shortBreak" | "longBreak",
-  taskId: string | null = null
-) {
-  const supabase = await createClient();
-  const { data: { user } } = await supabase.auth.getUser();
-
-  if (!user) {
-    throw new Error("Unauthorized");
-  }
-
-  const { error } = await supabase.from("focus_logs").insert({
-    user_id: user.id,
-    task_id: taskId || null,
-    duration,
-    type,
-  });
-
-  if (error) {
-    throw new Error(`Failed to log focus session: ${error.message}`);
-  }
-
-  revalidatePath("/dashboard");
-}
-
 export async function updateReminderPreferences(
   enabled: boolean,
   leadTimes: number[],
@@ -44,7 +18,9 @@ export async function updateReminderPreferences(
 
   // Stored in user_metadata; Supabase shallow-merges these keys, so the user's
   // name fields set by updateProfile are preserved.
-  const cleaned = [...new Set(leadTimes)].filter((n) => Number.isFinite(n) && n >= 0);
+  const cleaned = [...new Set(leadTimes)].filter(
+    (n) => Number.isFinite(n) && n >= 0,
+  );
 
   const { error } = await supabase.auth.updateUser({
     data: {
@@ -67,7 +43,9 @@ export async function signOutUser() {
 
 export async function updateProfile(formData: FormData) {
   const supabase = await createClient();
-  const { data: { user } } = await supabase.auth.getUser();
+  const {
+    data: { user },
+  } = await supabase.auth.getUser();
 
   if (!user) {
     throw new Error("Unauthorized");

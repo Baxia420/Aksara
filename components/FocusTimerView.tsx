@@ -1,821 +1,712 @@
 "use client";
 
-import React, { useState, useEffect, useMemo } from "react";
+import { useEffect, useMemo, useState } from "react";
 import {
-  RotateCcw,
-  Play,
-  Pause,
-  SkipForward,
   BookOpen,
-  ChevronDown,
   ChevronLeft,
   ChevronRight,
-  TrendingUp,
-  Quote,
   Clock,
-  BarChart2,
+  Pause,
+  Play,
+  RotateCcw,
+  Timer,
 } from "lucide-react";
-import { logFocusSession } from "@/app/actions";
-import { coursePillClasses, courseBarColors } from "@/lib/courseTheme";
+import { loadFocusWeek } from "@/app/actions/focus";
+import {
+  addDays,
+  courseForLog,
+  formatStudyTime,
+  secondsInRange,
+  studySummary,
+  weekStart,
+} from "@/lib/study";
+import { barColorForIndex, pillClassForIndex } from "@/lib/courseTheme";
+import { TIMER_DURATIONS } from "@/lib/study-timer";
+import type { StudyTimer } from "@/lib/useStudyTimer";
 import type { AcademicCourse, AcademicTask, FocusLog } from "@/lib/types";
 
-// ─── Types ───────────────────────────────────────────────────────────────────
-
-type FocusTimerViewProps = {
+type Props = {
   tasks: AcademicTask[];
   courses: AcademicCourse[];
   focusLogs: FocusLog[];
-  onRefresh: () => void;
+  timer: StudyTimer;
 };
-
-type TimerMode = "focus" | "shortBreak" | "longBreak";
-
-// ─── Constants ───────────────────────────────────────────────────────────────
-
-const MODE_DURATIONS: Record<TimerMode, number> = {
-  focus: 25 * 60,
-  shortBreak: 5 * 60,
-  longBreak: 15 * 60,
+const MODES = {
+  focus: "Focus (25m)",
+  shortBreak: "Short break (5m)",
+  longBreak: "Long break (15m)",
 };
+const fieldClass =
+  "mt-2 w-full min-w-0 rounded-2xl border border-line bg-surface-soft px-4 py-3 text-base text-ink outline-offset-4 disabled:opacity-60";
+const EMPTY_LOGS: FocusLog[] = [];
 
-const MODE_LABELS: Record<TimerMode, string> = {
-  focus: "Focus Session",
-  shortBreak: "Short Break",
-  longBreak: "Long Break",
-};
-
-// Day labels — unambiguous two-char abbreviations
-const DAY_LABELS = ["Mo", "Tu", "We", "Th", "Fr", "Sa", "Su"];
-
-// Course color palettes (single source of truth in lib/courseTheme).
-const COURSE_PILL_CLASSES = coursePillClasses;
-const COURSE_BAR_COLORS = courseBarColors;
-
-// ─── Helpers ─────────────────────────────────────────────────────────────────
-
-/** Returns the Monday of a given week offset (0 = current week, -1 = last week, …) */
-function getMondayOfWeek(weekOffset: number): Date {
-  const now = new Date();
-  const day = now.getDay(); // 0 = Sun
-  const diffToMonday = day === 0 ? -6 : 1 - day;
-  const monday = new Date(now);
-  monday.setDate(now.getDate() + diffToMonday + weekOffset * 7);
-  monday.setHours(0, 0, 0, 0);
-  return monday;
-}
-
-function formatWeekRange(monday: Date): string {
-  const sunday = new Date(monday);
-  sunday.setDate(monday.getDate() + 6);
-
-  const fmt = (d: Date) =>
-    d.toLocaleDateString("en-GB", { day: "numeric", month: "short" });
-
-  const yearSuffix =
-    sunday.getFullYear() !== new Date().getFullYear()
-      ? ` ${sunday.getFullYear()}`
-      : "";
-
-  return `${fmt(monday)} – ${fmt(sunday)}${yearSuffix}`;
-}
-
-function formatMinutes(totalMinutes: number): string {
-  if (totalMinutes < 1) return "< 1m";
-  const h = Math.floor(totalMinutes / 60);
-  const m = totalMinutes % 60;
-  if (h > 0 && m > 0) return `${h}h ${m}m`;
-  if (h > 0) return `${h}h`;
-  return `${m}m`;
-}
-
-// ─── Component ───────────────────────────────────────────────────────────────
-
-export function FocusTimerView({
-  tasks,
-  courses,
-  focusLogs,
-  onRefresh,
-}: FocusTimerViewProps) {
-  // Timer state
-  const [timerMode, setTimerMode] = useState<TimerMode>("focus");
-  const [timeLeft, setTimeLeft] = useState<number>(MODE_DURATIONS.focus);
-  const [timerActive, setTimerActive] = useState<boolean>(false);
-  const [selectedTaskId, setSelectedTaskId] = useState<string | null>(null);
-  const [isDropdownOpen, setIsDropdownOpen] = useState<boolean>(false);
-
-  // Week navigation state (0 = current week, -1 = prev, …)
-  const [weekOffset, setWeekOffset] = useState<number>(0);
-
-  // Active tasks only (for the task selector)
-  const activeTasks = useMemo(() => tasks.filter((t) => !t.completed), [tasks]);
-
-  const selectedTask = useMemo(
-    () => tasks.find((t) => t.id === selectedTaskId) || null,
-    [tasks, selectedTaskId],
-  );
-
-  // Build a map of courseCode → colorIndex for quick lookups
-  const courseColorMap = useMemo(() => {
-    const map = new Map<string, number>();
-    courses.forEach((c) => map.set(c.code, c.colorIndex));
-    return map;
-  }, [courses]);
-
-  // Default task selection
+export function FocusTimerView({ tasks, courses, focusLogs, timer }: Props) {
+  const [weekOffset, setWeekOffset] = useState(0);
+  const [history, setHistory] = useState<{
+    key: string;
+    logs: FocusLog[];
+  } | null>(null);
+  const [historyError, setHistoryError] = useState<string | null>(null);
+  const [retry, setRetry] = useState(0);
+  const [confirmDiscard, setConfirmDiscard] = useState(false);
+  const [today, setToday] = useState(() => new Date());
   useEffect(() => {
-    if (activeTasks.length > 0 && !selectedTaskId) {
-      setSelectedTaskId(activeTasks[0].id);
-    }
-  }, [activeTasks, selectedTaskId]);
-
-  // ── Timer countdown ──
+    const interval = setInterval(() => setToday(new Date()), 60000);
+    return () => clearInterval(interval);
+  }, []);
+  const monday = useMemo(
+    () => weekStart(today, weekOffset),
+    [today, weekOffset],
+  );
+  const nextMonday = useMemo(() => addDays(monday, 7), [monday]);
+  const weekKey = `${monday.toISOString()}/${nextMonday.toISOString()}`;
   useEffect(() => {
-    let interval: number | null = null;
-    if (timerActive && timeLeft > 0) {
-      interval = window.setInterval(() => {
-        setTimeLeft((prev) => prev - 1);
-      }, 1000);
-    } else if (timeLeft === 0 && timerActive) {
-      void handleTimerComplete();
-    }
-    return () => {
-      if (interval) window.clearInterval(interval);
-    };
-  }, [timerActive, timeLeft]);
-
-  const handleTimerComplete = async () => {
-    try {
-      setTimerActive(false);
-      playChime();
-      await logFocusSession(MODE_DURATIONS[timerMode], timerMode, selectedTaskId);
-      onRefresh();
-      setTimeLeft(MODE_DURATIONS[timerMode]);
-    } catch (e) {
-      console.error("Failed to save focus session:", e);
-    }
-  };
-
-  const playChime = () => {
-    try {
-      const AudioCtx =
-        window.AudioContext || (window as unknown as { webkitAudioContext: typeof AudioContext }).webkitAudioContext;
-      if (!AudioCtx) return;
-      const ctx = new AudioCtx();
-      const osc = ctx.createOscillator();
-      const gain = ctx.createGain();
-      osc.type = "sine";
-      osc.frequency.setValueAtTime(880, ctx.currentTime);
-      osc.frequency.setValueAtTime(440, ctx.currentTime + 0.15);
-      gain.gain.setValueAtTime(0.1, ctx.currentTime);
-      gain.gain.exponentialRampToValueAtTime(0.001, ctx.currentTime + 0.4);
-      osc.connect(gain);
-      gain.connect(ctx.destination);
-      osc.start();
-      osc.stop(ctx.currentTime + 0.45);
-    } catch (e) {
-      console.error("Audio Context playback failed", e);
-    }
-  };
-
-  const handleModeChange = (mode: TimerMode) => {
-    setTimerActive(false);
-    setTimerMode(mode);
-    setTimeLeft(MODE_DURATIONS[mode]);
-  };
-
-  const handleReset = () => {
-    setTimerActive(false);
-    setTimeLeft(MODE_DURATIONS[timerMode]);
-  };
-
-  const handleSkip = () => {
-    setTimerActive(false);
-    if (timerMode === "focus") {
-      handleModeChange("shortBreak");
-    } else {
-      handleModeChange("focus");
-    }
-  };
-
-  const formatTime = (seconds: number) => {
-    const mins = Math.floor(seconds / 60);
-    const secs = seconds % 60;
-    return `${mins.toString().padStart(2, "0")}:${secs.toString().padStart(2, "0")}`;
-  };
-
-  const totalDuration = MODE_DURATIONS[timerMode];
-  const circumference = 2 * Math.PI * 44; // r=44 → ≈ 276.46
-  const strokeDashoffset = circumference - (circumference * timeLeft) / totalDuration;
-
-  // ── Today stats (always current day, not affected by weekOffset) ──
-
-  const todayLogs = useMemo(() => {
-    const startOfToday = new Date();
-    startOfToday.setHours(0, 0, 0, 0);
-    return focusLogs.filter((log) => new Date(log.createdAt) >= startOfToday);
-  }, [focusLogs]);
-
-  const completedFocus = useMemo(
-    () => todayLogs.filter((log) => log.type === "focus").length,
-    [todayLogs],
-  );
-
-  const completedBreaks = useMemo(
-    () =>
-      todayLogs.filter(
-        (log) => log.type === "shortBreak" || log.type === "longBreak",
-      ).length,
-    [todayLogs],
-  );
-
-  const todayTotalFocusMinutes = useMemo(() => {
-    const totalSeconds = todayLogs
-      .filter((log) => log.type === "focus")
-      .reduce((sum, log) => sum + log.duration, 0);
-    return Math.floor(totalSeconds / 60);
-  }, [todayLogs]);
-
-  const todayFocusHours = Math.floor(todayTotalFocusMinutes / 60);
-  const todayFocusMinutes = todayTotalFocusMinutes % 60;
-  const dailyGoalMinutes = 4 * 60;
-  const progressPercent = Math.min(
-    100,
-    Math.round((todayTotalFocusMinutes / dailyGoalMinutes) * 100),
-  );
-
-  // ── Week helpers ──
-
-  const weekMonday = useMemo(() => getMondayOfWeek(weekOffset), [weekOffset]);
-  const weekLabel = useMemo(() => formatWeekRange(weekMonday), [weekMonday]);
-  const isCurrentWeek = weekOffset === 0;
-
-  // ── Weekly trend bar chart data ──
-
-  const weeklyTrendData = useMemo(() => {
-    const now = new Date();
-
-    const results = DAY_LABELS.map((dayLabel, index) => {
-      const targetDate = new Date(weekMonday);
-      targetDate.setDate(weekMonday.getDate() + index);
-
-      const targetDateEnd = new Date(targetDate);
-      targetDateEnd.setHours(23, 59, 59, 999);
-
-      const dayLogs = focusLogs.filter((log) => {
-        const logDate = new Date(log.createdAt);
-        return (
-          logDate >= targetDate &&
-          logDate <= targetDateEnd &&
-          log.type === "focus"
-        );
+    if (weekOffset === 0) return;
+    let cancelled = false;
+    // A week change clears an earlier error while the new request is loading.
+    // eslint-disable-next-line react-hooks/set-state-in-effect
+    setHistoryError(null);
+    const [start, end] = weekKey.split("/");
+    void loadFocusWeek(start, end)
+      .then((result) => {
+        if (cancelled) return;
+        if ("error" in result) setHistoryError(result.error);
+        else setHistory({ key: weekKey, logs: result.logs });
+      })
+      .catch(() => {
+        if (!cancelled)
+          setHistoryError("Could not load this week. Please try again.");
       });
-
-      const totalSeconds = dayLogs.reduce((sum, log) => sum + log.duration, 0);
-      const totalHours = parseFloat((totalSeconds / 3600).toFixed(1));
-      const isToday = targetDate.toDateString() === now.toDateString();
-      const isFuture = targetDate > now;
-
-      return { day: dayLabel, val: totalHours, isToday, isFuture };
-    });
-
-    const maxVal = Math.max(4, ...results.map((r) => r.val));
-    return results.map((r) => ({
-      ...r,
-      pct: Math.max(5, Math.round((r.val / maxVal) * 100)),
-    }));
-  }, [focusLogs, weekMonday]);
-
-  // ── Per-task & per-course time breakdown for selected week ──
-
-  const taskTimeBreakdown = useMemo(() => {
-    const weekEnd = new Date(weekMonday);
-    weekEnd.setDate(weekMonday.getDate() + 6);
-    weekEnd.setHours(23, 59, 59, 999);
-
-    // Only focus-type logs within the selected week
-    const weekFocusLogs = focusLogs.filter((log) => {
-      if (log.type !== "focus") return false;
-      const d = new Date(log.createdAt);
-      return d >= weekMonday && d <= weekEnd;
-    });
-
-    // Build a task lookup map
-    const taskMap = new Map<string, AcademicTask>(tasks.map((t) => [t.id, t]));
-
-    // Accumulate seconds per taskId
-    const taskSeconds = new Map<string | "untracked", number>();
-    weekFocusLogs.forEach((log) => {
-      const key = log.taskId || "untracked";
-      taskSeconds.set(key, (taskSeconds.get(key) || 0) + log.duration);
-    });
-
-    if (taskSeconds.size === 0) return [];
-
-    // Group tasks by course
-    const courseGroups = new Map<
-      string,
-      {
-        courseCode: string;
-        courseTitle: string;
-        colorIndex: number;
-        totalSeconds: number;
-        tasks: { taskId: string; taskTitle: string; taskType: string; seconds: number }[];
-      }
-    >();
-
-    taskSeconds.forEach((seconds, key) => {
-      if (key === "untracked") {
-        const existing = courseGroups.get("__untracked__");
-        if (existing) {
-          existing.totalSeconds += seconds;
-          existing.tasks.push({
-            taskId: "untracked",
-            taskTitle: "No task selected",
-            taskType: "",
-            seconds,
-          });
-        } else {
-          courseGroups.set("__untracked__", {
-            courseCode: "—",
-            courseTitle: "Untracked",
-            colorIndex: 5,
-            totalSeconds: seconds,
-            tasks: [{ taskId: "untracked", taskTitle: "No task selected", taskType: "", seconds }],
-          });
-        }
-        return;
-      }
-
-      const task = taskMap.get(key);
-      if (!task) return;
-
-      const colorIndex = courseColorMap.get(task.courseCode) ?? 0;
-      const existing = courseGroups.get(task.courseCode);
-
-      if (existing) {
-        existing.totalSeconds += seconds;
-        existing.tasks.push({
-          taskId: key,
-          taskTitle: task.title,
-          taskType: task.type,
-          seconds,
-        });
-      } else {
-        courseGroups.set(task.courseCode, {
-          courseCode: task.courseCode,
-          courseTitle: task.courseTitle,
-          colorIndex,
-          totalSeconds: seconds,
-          tasks: [{ taskId: key, taskTitle: task.title, taskType: task.type, seconds }],
-        });
-      }
-    });
-
-    // Sort courses by total time descending, sort tasks within each course descending
-    return Array.from(courseGroups.values())
-      .sort((a, b) => b.totalSeconds - a.totalSeconds)
-      .map((group) => ({
-        ...group,
-        tasks: [...group.tasks].sort((a, b) => b.seconds - a.seconds),
-      }));
-  }, [focusLogs, tasks, courseColorMap, weekMonday]);
-
-  // Total focus time for the selected week (for the breakdown card header)
-  const weekTotalMinutes = useMemo(() => {
-    const totalSecs = taskTimeBreakdown.reduce((s, g) => s + g.totalSeconds, 0);
-    return Math.floor(totalSecs / 60);
-  }, [taskTimeBreakdown]);
-
-  // Max course seconds (for relative bar widths in breakdown)
-  const maxCourseSeconds = useMemo(
-    () => Math.max(1, ...taskTimeBreakdown.map((g) => g.totalSeconds)),
-    [taskTimeBreakdown],
+    return () => {
+      cancelled = true;
+    };
+  }, [weekOffset, weekKey, retry]);
+  const weekLogs =
+    weekOffset === 0
+      ? focusLogs
+      : history?.key === weekKey
+        ? history.logs
+        : EMPTY_LOGS;
+  const weekError = weekOffset === 0 ? null : historyError;
+  const loading = weekOffset !== 0 && history?.key !== weekKey && !weekError;
+  const summary = useMemo(
+    () => studySummary(weekLogs, tasks, courses, monday, nextMonday),
+    [weekLogs, tasks, courses, monday, nextMonday],
   );
-
-  // ── Render ──
+  const todaySummary = useMemo(() => {
+    const startToday = new Date(today);
+    startToday.setHours(0, 0, 0, 0);
+    return studySummary(
+      focusLogs,
+      tasks,
+      courses,
+      startToday,
+      addDays(startToday, 1),
+    );
+  }, [focusLogs, tasks, courses, today]);
+  const selectedCourse = courses.find(
+    (course) => course.id === timer.state.courseId,
+  );
+  const selectedTask = tasks.find((task) => task.id === timer.state.taskId);
+  const availableTasks = tasks.filter(
+    (task) => task.courseCode === selectedCourse?.code && !task.completed,
+  );
+  const recent = useMemo(
+    () => focusLogs.filter((log) => log.type === "focus").slice(0, 5),
+    [focusLogs],
+  );
+  const days = useMemo(
+    () =>
+      Array.from({ length: 7 }, (_, index) => {
+        const date = addDays(monday, index);
+        const end = addDays(date, 1);
+        const seconds = weekLogs.reduce(
+          (sum, log) => sum + secondsInRange(log, date, end),
+          0,
+        );
+        const byCourse = summary.courses.map((course) => ({
+          ...course,
+          seconds: weekLogs.reduce(
+            (sum, log) =>
+              sum +
+              (courseForLog(log, tasks, courses).key === course.key
+                ? secondsInRange(log, date, end)
+                : 0),
+            0,
+          ),
+        }));
+        return { date, seconds, byCourse, future: date > today };
+      }),
+    [monday, weekLogs, summary.courses, tasks, courses, today],
+  );
+  const maxSeconds = Math.max(1, ...days.map((day) => day.seconds));
+  const progress =
+    timer.state.timerStyle === "pomodoro"
+      ? Math.min(100, (timer.elapsed / TIMER_DURATIONS[timer.state.type]) * 100)
+      : 0;
+  const clock = `${Math.floor(timer.seconds / 60)
+    .toString()
+    .padStart(2, "0")}:${(timer.seconds % 60).toString().padStart(2, "0")}`;
+  const contextTitle =
+    selectedCourse?.title ||
+    selectedTask?.courseTitle ||
+    (timer.state.courseId ? "Previous course" : "General focus");
+  const locked = !timer.ready || timer.active;
 
   return (
-    <div className="max-w-[100rem] mx-auto grid grid-cols-1 lg:grid-cols-12 gap-7">
-      {/* ── Left / Center Column (Timer) ── */}
-      <div className="lg:col-span-8 flex flex-col gap-4">
-        <article className="aksara-card rounded-[2rem] p-5 pt-7 md:p-12 flex flex-col items-center justify-center relative">
-          {/* Decorative blur */}
-          <div className="absolute top-1/2 left-1/2 -translate-x-1/2 -translate-y-1/2 w-64 h-64 bg-maroon/4 rounded-full blur-3xl z-0 pointer-events-none" />
-
-          {/* Mode selectors */}
-          <div className="flex flex-wrap justify-center gap-2 bg-surface-soft/60 p-1.5 rounded-2xl backdrop-blur-md border border-line/30 z-10 mb-8 w-full max-w-sm">
-            {(["focus", "shortBreak", "longBreak"] as TimerMode[]).map((mode) => (
-              <button
-                key={mode}
-                onClick={() => handleModeChange(mode)}
-                className={`flex-1 min-w-[6rem] px-3 py-2 text-xs font-semibold rounded-xl transition-all duration-200 ${
-                  timerMode === mode
-                    ? "bg-surface text-maroon shadow-[0_4px_12px_rgba(131,16,62,0.06)]"
-                    : "text-ink-muted hover:bg-surface/40"
-                }`}
+    <div className="mx-auto grid max-w-[100rem] min-w-0 grid-cols-1 gap-7 lg:grid-cols-12">
+      <div className="flex min-w-0 flex-col gap-7 lg:col-span-8">
+        <article className="aksara-card min-w-0 rounded-[2rem] p-5 md:p-10">
+          <div className="mb-7 hidden items-start justify-between gap-3 md:flex">
+            <div>
+              <p className="aksara-mono text-[0.64rem] text-maroon-soft">
+                Course study
+              </p>
+              <h1 className="aksara-serif mt-2 text-[2.8rem] leading-none text-ink md:text-[3.5rem]">
+                Time to focus.
+              </h1>
+            </div>
+            <BookOpen
+              className="mt-2 size-5 shrink-0 text-maroon-soft"
+              aria-hidden="true"
+            />
+          </div>
+          <label
+            className="block text-sm font-semibold text-ink-muted"
+            htmlFor="study-course"
+          >
+            What are you studying?
+          </label>
+          <select
+            id="study-course"
+            className={fieldClass}
+            value={timer.state.courseId || ""}
+            disabled={locked}
+            onChange={(event) => timer.selectCourse(event.target.value || null)}
+          >
+            <option value="">General focus</option>
+            {timer.state.courseId && !selectedCourse && (
+              <option value={timer.state.courseId}>Previous course</option>
+            )}
+            {courses.map((course) => (
+              <option key={course.id} value={course.id}>
+                {course.code} — {course.title}
+              </option>
+            ))}
+          </select>
+          {(selectedCourse || selectedTask) && (
+            <details
+              className="mt-3"
+              key={timer.state.courseId}
+              open={timer.state.taskId ? true : undefined}
+            >
+              <summary className="flex min-h-11 cursor-pointer items-center text-sm font-semibold text-maroon">
+                {timer.state.taskId ? "Linked task" : "Link a task · optional"}
+              </summary>
+              <label
+                htmlFor="study-task"
+                className="text-sm font-semibold text-ink-muted"
               >
-                {mode === "focus" && "Focus (25m)"}
-                {mode === "shortBreak" && "Short Break (5m)"}
-                {mode === "longBreak" && "Long Break (15m)"}
+                Task{" "}
+                <span className="font-normal text-ink-soft">· optional</span>
+              </label>
+              <select
+                id="study-task"
+                className={fieldClass}
+                disabled={locked}
+                value={timer.state.taskId || ""}
+                onChange={(event) =>
+                  timer.selectTask(event.target.value || null)
+                }
+              >
+                <option value="">Just studying the course</option>
+                {timer.state.taskId &&
+                  !availableTasks.some(
+                    (task) => task.id === timer.state.taskId,
+                  ) && (
+                    <option value={timer.state.taskId}>
+                      {selectedTask?.title || "Previous task"}
+                    </option>
+                  )}
+                {availableTasks.map((task) => (
+                  <option key={task.id} value={task.id}>
+                    {task.title}
+                  </option>
+                ))}
+              </select>
+              {timer.state.taskId && (
+                <p className="mt-2 text-xs text-ink-soft">
+                  This time is included in your course total.
+                </p>
+              )}
+            </details>
+          )}
+          {!courses.length && (
+            <p className="mt-3 text-sm text-ink-muted">
+              Add a course in Courses to track its study time. General focus is
+              available now.
+            </p>
+          )}
+          <div
+            className="mt-4 flex justify-center gap-2 md:mt-7"
+            aria-label="Timer style"
+          >
+            {(["pomodoro", "stopwatch"] as const).map((style) => (
+              <button
+                key={style}
+                type="button"
+                disabled={locked}
+                aria-pressed={timer.state.timerStyle === style}
+                onClick={() => timer.configure(style, "focus")}
+                className={`aksara-chip min-h-11 px-4 py-2 text-sm font-semibold disabled:opacity-60 ${timer.state.timerStyle === style ? "aksara-chip-active" : ""}`}
+              >
+                {style === "pomodoro" ? "Pomodoro" : "Stopwatch"}
               </button>
             ))}
           </div>
-
-          {/* SVG Progress Ring */}
-          <div className="relative w-52 h-52 md:w-72 md:h-72 flex items-center justify-center z-10 mb-8">
+          {timer.state.timerStyle === "pomodoro" && (
+            <div
+              className="mx-auto mt-3 grid max-w-md grid-cols-3 gap-1 rounded-2xl border border-line bg-surface-soft p-1.5 md:mt-4"
+              aria-label="Pomodoro interval"
+            >
+              {(Object.keys(MODES) as Array<keyof typeof MODES>).map((mode) => (
+                <button
+                  type="button"
+                  key={mode}
+                  disabled={locked}
+                  aria-pressed={timer.state.type === mode}
+                  aria-label={MODES[mode]}
+                  onClick={() => timer.configure("pomodoro", mode)}
+                  className={`min-h-11 min-w-0 rounded-xl px-2 py-2 text-xs! font-semibold disabled:opacity-60 ${timer.state.type === mode ? "bg-surface text-maroon shadow-sm" : "text-ink-muted"}`}
+                >
+                  <span className="block whitespace-nowrap">
+                    {mode === "focus"
+                      ? "Focus"
+                      : mode === "shortBreak"
+                        ? "Short"
+                        : "Long"}
+                    <span className="hidden md:inline">
+                      {mode !== "focus" ? " break" : ""}
+                    </span>
+                  </span>
+                  <span className="block font-normal">
+                    {TIMER_DURATIONS[mode] / 60}m
+                  </span>
+                </button>
+              ))}
+            </div>
+          )}
+          <div className="relative mx-auto my-4 flex size-44 items-center justify-center md:my-7 md:size-64">
             <svg
-              className="w-full h-full absolute top-0 left-0"
+              className="absolute inset-0 size-full -rotate-90"
               viewBox="0 0 100 100"
+              aria-hidden="true"
             >
               <circle
-                className="text-[#ddbfc4]/25"
                 cx="50"
                 cy="50"
-                fill="none"
                 r="44"
-                stroke="currentColor"
+                fill="none"
+                stroke="var(--line)"
                 strokeWidth="2.5"
               />
               <circle
-                className="text-maroon progress-ring__circle"
                 cx="50"
                 cy="50"
-                fill="none"
                 r="44"
-                stroke="currentColor"
-                strokeDasharray={circumference}
-                strokeDashoffset={strokeDashoffset}
+                fill="none"
+                stroke="var(--maroon)"
+                strokeWidth="3.5"
                 strokeLinecap="round"
-                strokeWidth="4"
+                strokeDasharray={2 * Math.PI * 44}
+                strokeDashoffset={2 * Math.PI * 44 * (progress / 100)}
               />
             </svg>
-            <div className="flex flex-col items-center justify-center">
-              <span className="text-[0.68rem] font-bold text-maroon-soft tracking-[0.22em] uppercase mb-2">
-                {MODE_LABELS[timerMode]}
-              </span>
-              <span className="aksara-serif text-ink text-[4.4rem] font-bold leading-none tracking-tight">
-                {formatTime(timeLeft)}
-              </span>
-            </div>
-          </div>
-
-          {/* Controls */}
-          <div className="flex items-center gap-5 z-10 mb-8">
-            <button
-              onClick={handleReset}
-              className="w-12 h-12 rounded-full border border-line/40 text-ink-muted flex items-center justify-center hover:bg-surface/70 transition-all active:scale-95 shadow-sm"
-              title="Reset Timer"
-            >
-              <RotateCcw className="size-4.5" />
-            </button>
-
-            <button
-              onClick={() => setTimerActive(!timerActive)}
-              className="w-20 h-20 rounded-full aksara-primary-button text-white flex items-center justify-center shadow-lg transition-all active:scale-95 relative group hover:opacity-95"
-              title={timerActive ? "Pause" : "Start"}
-            >
-              {timerActive ? (
-                <Pause className="size-8" />
-              ) : (
-                <Play className="size-8 ml-1" />
-              )}
-            </button>
-
-            <button
-              onClick={handleSkip}
-              className="w-12 h-12 rounded-full border border-line/40 text-ink-muted flex items-center justify-center hover:bg-surface/70 transition-all active:scale-95 shadow-sm"
-              title="Skip Session"
-            >
-              <SkipForward className="size-4.5" />
-            </button>
-          </div>
-
-          {/* Task selector */}
-          <div className="w-full max-w-md z-10">
-            <label className="block text-[0.68rem] font-bold text-ink-soft tracking-[0.15em] uppercase mb-2.5 text-center">
-              What are you focusing on?
-            </label>
-            <div className="relative">
-              <button
-                onClick={() => setIsDropdownOpen(!isDropdownOpen)}
-                className="w-full flex items-center justify-between px-5 py-4 rounded-xl border border-line/40 bg-surface/90 hover:border-maroon/40 transition-colors text-left group"
+            <div className="max-w-full px-5 text-center">
+              <p className="aksara-mono text-[0.6rem] text-maroon-soft">
+                {timer.state.pending
+                  ? "Ready to save"
+                  : timer.running
+                    ? "In progress"
+                    : timer.active
+                      ? "Paused"
+                      : timer.state.type === "focus"
+                        ? "Focus session"
+                        : "Take a break"}
+              </p>
+              <p
+                role="timer"
+                aria-label="Study timer"
+                className="aksara-serif mt-1 text-[3.3rem] font-semibold leading-none tabular-nums text-ink md:text-[4.4rem]"
               >
-                <div className="flex items-center gap-3 truncate">
-                  <BookOpen className="size-4.5 text-maroon shrink-0" />
-                  <span className="text-base text-ink truncate">
-                    {selectedTask
-                      ? `${selectedTask.courseCode} — ${selectedTask.title}`
-                      : "Select a task..."}
-                  </span>
-                </div>
-                <ChevronDown className="size-4.5 text-ink-soft group-hover:text-maroon transition-colors shrink-0" />
-              </button>
-
-              {isDropdownOpen && (
-                <div className="absolute top-full left-0 right-0 mt-2 max-h-52 overflow-y-auto bg-surface border border-line/40 rounded-xl shadow-[0_12px_32px_rgba(131,16,62,0.1)] z-30 aksara-scrollbar">
-                  {activeTasks.length === 0 ? (
-                    <div className="p-4 text-ink-soft text-center text-sm">
-                      No pending tasks found.
-                    </div>
-                  ) : (
-                    activeTasks.map((t) => (
-                      <button
-                        key={t.id}
-                        onClick={() => {
-                          setSelectedTaskId(t.id);
-                          setIsDropdownOpen(false);
-                        }}
-                        className={`w-full text-left px-5 py-3 text-sm hover:bg-maroon/5 transition-colors border-b border-line/10 last:border-none flex items-center justify-between ${
-                          selectedTaskId === t.id
-                            ? "text-maroon font-semibold bg-maroon/3"
-                            : "text-ink-body"
-                        }`}
-                      >
-                        <span className="truncate">
-                          {t.courseCode} — {t.title}
-                        </span>
-                        <span className="text-xs uppercase tracking-wider font-semibold text-maroon-soft ml-2 shrink-0">
-                          {t.type}
-                        </span>
-                      </button>
-                    ))
-                  )}
-                </div>
-              )}
-            </div>
-          </div>
-        </article>
-      </div>
-
-      {/* ── Right Sidebar ── */}
-      <div className="lg:col-span-4 flex flex-col gap-7">
-
-        {/* Today's Focus Card */}
-        <article className="aksara-card rounded-[2rem] p-7 flex flex-col gap-6">
-          <div>
-            <h3 className="text-xl font-bold text-ink mb-1">
-              Today&apos;s Focus
-            </h3>
-            <p className="text-sm text-ink-soft">Stay on track with your goals.</p>
-          </div>
-
-          <div className="flex flex-col gap-4">
-            {/* Total time progress */}
-            <div>
-              <div className="flex justify-between items-end mb-2">
-                <span className="text-[0.64rem] font-semibold text-ink-soft tracking-widest uppercase">
-                  Total Focus Time
-                </span>
-                <span className="aksara-serif text-[1.6rem] font-bold text-maroon leading-none">
-                  {todayFocusHours > 0 ? `${todayFocusHours}h ` : ""}
-                  {todayFocusMinutes}m
-                </span>
-              </div>
-              <div className="w-full h-1 bg-line/30 rounded-full overflow-hidden">
-                <div
-                  className="h-full bg-gradient-to-r from-maroon to-gold rounded-full transition-all duration-500"
-                  style={{ width: `${progressPercent}%` }}
-                />
-              </div>
-              <div className="flex justify-between items-center mt-1 text-[10px] text-ink-soft font-semibold">
-                <span>Goal: 4h</span>
-                <span>{progressPercent}%</span>
-              </div>
-            </div>
-
-            {/* Completed cycles */}
-            <div className="pt-4 border-t border-line/20">
-              <span className="text-[0.64rem] font-semibold text-ink-soft tracking-widest uppercase block mb-3">
-                Completed Cycles
-              </span>
-              <div className="flex flex-wrap items-center gap-2">
-                {Array.from({ length: 4 }).map((_, i) => (
-                  <div
-                    key={`focus-dot-${i}`}
-                    className={`w-3.5 h-3.5 rounded-full transition-colors ${
-                      i < completedFocus
-                        ? "bg-brand shadow-[0_0_8px_rgba(131,16,62,0.4)]"
-                        : "bg-line/30 border border-line/60"
-                    }`}
-                  />
-                ))}
-                {Array.from({ length: 4 }).map((_, i) => (
-                  <div
-                    key={`break-dot-${i}`}
-                    className={`w-3.5 h-3.5 rounded-full transition-colors ${
-                      i < completedBreaks
-                        ? "bg-gold shadow-[0_0_8px_rgba(226,162,47,0.4)]"
-                        : "bg-line/30 border border-line/60"
-                    }`}
-                  />
-                ))}
-              </div>
-              <p className="text-xs text-ink-soft mt-3 font-semibold">
-                {completedFocus} focus sessions, {completedBreaks} breaks
+                {timer.ready ? clock : "—:—"}
               </p>
             </div>
           </div>
-        </article>
-
-        {/* Weekly Trend Card (with week navigation) */}
-        <article className="aksara-card rounded-[2rem] p-7 flex flex-col gap-4">
-          {/* Header row */}
-          <div className="flex justify-between items-center">
-            <div className="flex items-center gap-2">
-              <TrendingUp className="size-4 text-ink-soft" />
-              <span className="text-base font-bold text-ink">Weekly Trend</span>
-            </div>
-          </div>
-
-          {/* Week navigation */}
-          <div className="flex items-center justify-between bg-surface-soft/60 rounded-xl px-3 py-2 border border-line/25">
-            <button
-              onClick={() => setWeekOffset((o) => o - 1)}
-              className="w-7 h-7 rounded-lg flex items-center justify-center text-ink-muted hover:bg-surface/70 hover:text-maroon transition-all"
-              title="Previous week"
-            >
-              <ChevronLeft className="size-3.5" />
-            </button>
-            <span className="text-[0.65rem] font-bold text-ink-soft tracking-wider uppercase text-center">
-              {isCurrentWeek ? "This Week" : weekLabel}
-            </span>
-            <button
-              onClick={() => setWeekOffset((o) => o + 1)}
-              disabled={isCurrentWeek}
-              className="w-7 h-7 rounded-lg flex items-center justify-center text-ink-muted hover:bg-surface/70 hover:text-maroon transition-all disabled:opacity-30 disabled:cursor-not-allowed disabled:hover:bg-transparent disabled:hover:text-ink-muted"
-              title="Next week"
-            >
-              <ChevronRight className="size-3.5" />
-            </button>
-          </div>
-
-          {/* Bar chart */}
-          <div className="h-24 flex items-end gap-1.5 mt-1">
-            {weeklyTrendData.map((bar, i) => (
-              <div
-                key={i}
-                className="flex-1 flex flex-col items-center h-full justify-end relative group"
-              >
-                {/* Tooltip */}
-                <span className="absolute bottom-full mb-1 text-[10px] font-bold text-maroon opacity-0 group-hover:opacity-100 transition-opacity bg-surface/90 border border-line/30 px-1.5 py-0.5 rounded shadow-sm z-10 whitespace-nowrap">
-                  {bar.val}h
-                </span>
-                {/* Bar */}
-                <div
-                  className={`w-full rounded-t-[4px] transition-all duration-300 ${
-                    bar.isToday
-                      ? "bg-brand shadow-[0_0_12px_rgba(131,16,62,0.2)]"
-                      : bar.isFuture && isCurrentWeek
-                      ? "bg-line/20 border border-dashed border-line/40"
-                      : "bg-line/40 hover:bg-maroon/40"
-                  }`}
-                  style={{ height: `${bar.pct}%` }}
-                />
-              </div>
-            ))}
-          </div>
-
-          {/* Day labels */}
-          <div className="flex justify-between text-[9px] font-bold text-ink-soft uppercase tracking-wider px-0.5">
-            {DAY_LABELS.map((d, i) => (
-              <span
-                key={i}
-                className={
-                  weeklyTrendData[i]?.isToday ? "text-maroon" : undefined
-                }
-              >
-                {d}
-              </span>
-            ))}
-          </div>
-        </article>
-
-        {/* Time by Topic Card */}
-        <article className="aksara-card rounded-[2rem] p-7 flex flex-col gap-5">
-          {/* Header */}
-          <div className="flex items-start justify-between gap-2">
-            <div>
-              <div className="flex items-center gap-2 mb-1">
-                <BarChart2 className="size-4 text-ink-soft" />
-                <span className="text-base font-bold text-ink">Time by Topic</span>
-              </div>
-              <p className="text-[0.65rem] text-ink-soft font-semibold tracking-wide uppercase">
-                {isCurrentWeek ? "This week" : weekLabel}
+          <div className="mb-5 hidden text-center md:block">
+            <p className="break-words text-base font-semibold text-ink">
+              {contextTitle}
+            </p>
+            {selectedTask && (
+              <p className="mt-1 break-words text-sm text-ink-muted">
+                {selectedTask.title}
               </p>
-            </div>
-            {weekTotalMinutes > 0 && (
-              <div className="text-right shrink-0">
-                <span className="aksara-serif text-[1.35rem] font-bold text-maroon leading-none">
-                  {formatMinutes(weekTotalMinutes)}
-                </span>
-                <p className="text-[0.6rem] text-ink-soft font-semibold uppercase tracking-wide mt-0.5">
-                  total
-                </p>
-              </div>
             )}
           </div>
-
-          {/* Content */}
-          {taskTimeBreakdown.length === 0 ? (
-            <div className="flex flex-col items-center justify-center py-8 gap-3">
-              <div className="w-12 h-12 rounded-2xl bg-surface-soft flex items-center justify-center">
-                <Clock className="size-5 text-ink-soft" />
-              </div>
-              <p className="text-sm text-ink-soft font-semibold text-center leading-relaxed">
-                No focus sessions logged
-                <br />
-                <span className="font-normal text-xs">
-                  {isCurrentWeek ? "Start a session to see your stats" : "for this week"}
-                </span>
+          <div className="flex flex-wrap items-center justify-center gap-3">
+            {timer.state.pending ? (
+              <button
+                type="button"
+                onClick={() => void timer.finish()}
+                disabled={timer.saving}
+                className="aksara-primary-button min-h-12 rounded-2xl px-6 py-3 text-sm font-semibold text-white disabled:opacity-60"
+              >
+                {timer.saving ? "Saving…" : "Retry save"}
+              </button>
+            ) : (
+              <button
+                type="button"
+                onClick={timer.toggle}
+                disabled={!timer.ready || timer.saving}
+                className="aksara-primary-button flex min-h-12 items-center gap-2 rounded-2xl px-6 py-3 text-sm font-semibold text-white disabled:opacity-60"
+              >
+                {timer.running ? (
+                  <Pause className="size-4" />
+                ) : (
+                  <Play className="size-4" />
+                )}
+                {timer.running
+                  ? "Pause"
+                  : timer.active
+                    ? "Resume"
+                    : "Start studying"}
+              </button>
+            )}
+            {timer.active && !timer.state.pending && (
+              <button
+                type="button"
+                onClick={() => void timer.finish()}
+                className="aksara-chip min-h-12 px-5 py-3 text-sm font-semibold"
+              >
+                End & save
+              </button>
+            )}
+            {timer.active && (
+              <button
+                type="button"
+                aria-label="Discard session"
+                disabled={timer.saving}
+                onClick={() => setConfirmDiscard(true)}
+                className="aksara-icon-button size-12 disabled:opacity-60"
+              >
+                <RotateCcw className="size-4" />
+              </button>
+            )}
+          </div>
+          {confirmDiscard && (
+            <div
+              className="mt-4 rounded-2xl border border-line bg-surface-soft p-4"
+              role="group"
+              aria-label="Discard session confirmation"
+            >
+              <p className="text-sm text-ink-body">
+                Discard this session without saving its time?
               </p>
+              <div className="mt-3 flex flex-wrap gap-3">
+                <button
+                  type="button"
+                  disabled={timer.saving}
+                  onClick={() => {
+                    timer.discard();
+                    setConfirmDiscard(false);
+                  }}
+                  className="aksara-chip min-h-11 px-4 py-2 text-sm"
+                >
+                  Discard
+                </button>
+                <button
+                  type="button"
+                  onClick={() => setConfirmDiscard(false)}
+                  className="min-h-11 px-3 text-sm text-maroon"
+                >
+                  Keep studying
+                </button>
+              </div>
             </div>
-          ) : (
-            <div className="flex flex-col gap-5">
-              {taskTimeBreakdown.map((group) => {
-                const colorIndex = group.colorIndex % COURSE_PILL_CLASSES.length;
-                const pillClass = COURSE_PILL_CLASSES[colorIndex];
-                const barClass = COURSE_BAR_COLORS[colorIndex];
-                const courseWidthPct = Math.round(
-                  (group.totalSeconds / maxCourseSeconds) * 100,
-                );
-                const courseMins = Math.floor(group.totalSeconds / 60);
-
-                return (
-                  <div key={group.courseCode} className="flex flex-col gap-2.5">
-                    {/* Course header row */}
-                    <div className="flex items-center justify-between gap-2">
-                      <span
-                        className={`inline-flex items-center rounded-full px-2.5 py-0.5 text-[0.65rem] font-bold tracking-[0.04em] shrink-0 ${pillClass}`}
-                      >
-                        {group.courseCode}
-                      </span>
-                      <div className="flex items-baseline gap-1.5 shrink-0">
-                        <span className="text-sm font-bold text-ink">
-                          {formatMinutes(courseMins)}
-                        </span>
-                        <span className="text-[0.6rem] text-ink-soft font-semibold">
-                          {Math.round((group.totalSeconds / (taskTimeBreakdown.reduce((s, g) => s + g.totalSeconds, 0))) * 100)}%
-                        </span>
-                      </div>
-                    </div>
-
-                    {/* Course title */}
-                    <p className="text-[0.7rem] text-ink-soft font-medium -mt-1.5 pl-0.5 truncate">
-                      {group.courseTitle}
-                    </p>
-
-                    {/* Course total bar */}
-                    <div className="w-full h-1.5 bg-line/20 rounded-full overflow-hidden">
-                      <div
-                        className={`h-full rounded-full transition-all duration-500 ${barClass}`}
-                        style={{ width: `${courseWidthPct}%` }}
-                      />
-                    </div>
-
-                    {/* Individual task rows */}
-                    <div className="flex flex-col gap-1.5 pl-1 mt-0.5">
-                      {group.tasks.map((task) => {
-                        const taskMins = Math.floor(task.seconds / 60);
-                        const taskWidthPct = Math.round(
-                          (task.seconds / group.totalSeconds) * 100,
-                        );
-
-                        return (
-                          <div key={task.taskId} className="flex flex-col gap-1">
-                            <div className="flex items-center justify-between gap-2">
-                              <span className="text-xs text-ink-body font-medium truncate flex-1 leading-tight">
-                                {task.taskTitle}
-                              </span>
-                              <span className="text-xs font-semibold text-ink-soft shrink-0">
-                                {formatMinutes(taskMins)}
-                              </span>
-                            </div>
-                            {/* Task sub-bar (relative to course total) */}
-                            <div className="w-full h-1 bg-line/15 rounded-full overflow-hidden">
-                              <div
-                                className={`h-full rounded-full opacity-50 transition-all duration-500 ${barClass}`}
-                                style={{ width: `${taskWidthPct}%` }}
-                              />
-                            </div>
-                          </div>
-                        );
-                      })}
-                    </div>
-                  </div>
-                );
-              })}
-            </div>
+          )}
+          {timer.error && (
+            <p
+              role="alert"
+              className="mt-4 text-center text-sm text-maroon-bright"
+            >
+              {timer.error}
+            </p>
+          )}
+          {timer.notice && (
+            <p
+              role="status"
+              className="mt-4 text-center text-sm text-ink-muted"
+            >
+              {timer.notice}
+            </p>
+          )}
+          {timer.storageWarning && (
+            <p role="alert" className="mt-3 text-sm text-ink-muted">
+              Device storage is unavailable. Keep this page open until your
+              session is saved.
+            </p>
           )}
         </article>
 
-        {/* Motivation Card */}
-        <article className="aksara-card rounded-[2rem] p-7 relative overflow-hidden bg-gradient-to-br from-[#fffaf6] to-[#ddbfc4]/20 border-none flex items-center min-h-[120px]">
-          <Quote className="absolute -top-3 -left-3 size-20 text-gold/8 rotate-180 pointer-events-none" />
-          <p className="aksara-serif text-lg italic text-maroon-deep leading-relaxed relative z-10 pl-2">
-            &ldquo;Focus is a muscle, and you are building it. Keep going.&rdquo;
+        <article className="aksara-card min-w-0 rounded-[2rem] p-5 md:p-7">
+          <div className="flex flex-wrap items-center justify-between gap-4">
+            <div>
+              <p className="aksara-mono text-[0.6rem] text-maroon-soft">
+                Your week
+              </p>
+              <h2 className="aksara-serif mt-2 text-[2.3rem] leading-none text-ink">
+                Study time
+              </h2>
+            </div>
+            <div className="flex items-center gap-2">
+              <button
+                type="button"
+                aria-label="Previous study week"
+                className="aksara-icon-button size-11"
+                onClick={() => setWeekOffset((offset) => offset - 1)}
+              >
+                <ChevronLeft className="size-4" />
+              </button>
+              <button
+                type="button"
+                className="aksara-chip min-h-11 px-3 text-xs font-semibold"
+                disabled={weekOffset === 0}
+                onClick={() => setWeekOffset(0)}
+              >
+                This week
+              </button>
+              <button
+                type="button"
+                aria-label="Next study week"
+                disabled={weekOffset === 0}
+                className="aksara-icon-button size-11 disabled:opacity-40"
+                onClick={() =>
+                  setWeekOffset((offset) => Math.min(0, offset + 1))
+                }
+              >
+                <ChevronRight className="size-4" />
+              </button>
+            </div>
+          </div>
+          <p className="mt-4 text-sm text-ink-soft">
+            {monday.toLocaleDateString("en-GB", {
+              day: "numeric",
+              month: "short",
+              year: "numeric",
+            })}{" "}
+            –{" "}
+            {addDays(monday, 6).toLocaleDateString("en-GB", {
+              day: "numeric",
+              month: "short",
+              year: "numeric",
+            })}
           </p>
+          {loading ? (
+            <p role="status" className="py-10 text-sm text-ink-muted">
+              Loading study history…
+            </p>
+          ) : weekError ? (
+            <div role="alert" className="py-8 text-sm text-ink-muted">
+              {weekError}
+              <button
+                type="button"
+                className="ml-2 min-h-11 text-maroon"
+                onClick={() => setRetry((value) => value + 1)}
+              >
+                Retry
+              </button>
+            </div>
+          ) : (
+            <>
+              <div className="mt-4 flex flex-wrap items-baseline gap-x-4 gap-y-1">
+                <p className="aksara-serif text-[2.7rem] leading-none text-maroon">
+                  {formatStudyTime(summary.totalSeconds)}
+                </p>
+                <p className="text-sm text-ink-soft">
+                  {summary.sessions} session{summary.sessions === 1 ? "" : "s"}{" "}
+                  · breaks excluded
+                </p>
+              </div>
+              <div
+                className="mt-7 grid grid-cols-7 gap-2"
+                aria-label="Daily study time"
+              >
+                {days.map((day) => (
+                  <div
+                    key={day.date.toISOString()}
+                    className="min-w-0 text-center"
+                  >
+                    <p className="min-h-9 text-[11px] leading-4 text-ink-muted">
+                      {day.future ? "—" : formatStudyTime(day.seconds)}
+                    </p>
+                    <div
+                      className="flex h-32 items-end justify-center border-b border-line"
+                      role="img"
+                      aria-label={`${day.date.toLocaleDateString("en-GB", { weekday: "long" })}: ${day.future ? "upcoming" : formatStudyTime(day.seconds)}`}
+                    >
+                      <div className="flex w-full max-w-9 flex-col-reverse overflow-hidden rounded-t-md">
+                        {day.byCourse
+                          .filter((course) => course.seconds > 0)
+                          .map((course) => (
+                            <div
+                              key={course.key}
+                              className={barColorForIndex(course.colorIndex)}
+                              style={{
+                                height: `${(course.seconds / maxSeconds) * 120}px`,
+                              }}
+                              title={`${course.title}: ${formatStudyTime(course.seconds)}`}
+                            />
+                          ))}
+                      </div>
+                    </div>
+                    <p
+                      className={`mt-2 text-xs ${day.date.toDateString() === today.toDateString() ? "font-semibold text-maroon" : "text-ink-soft"}`}
+                    >
+                      {day.date.toLocaleDateString("en-GB", {
+                        weekday: "short",
+                      })}
+                    </p>
+                  </div>
+                ))}
+              </div>
+              <div className="mt-6 space-y-5">
+                {summary.courses.map((course) => (
+                  <div key={course.key}>
+                    <div className="flex items-start justify-between gap-3">
+                      <div className="min-w-0">
+                        <span
+                          className={`inline-block max-w-full break-words rounded-lg px-2 py-1 text-xs font-semibold ${pillClassForIndex(course.colorIndex)}`}
+                        >
+                          {course.code || "General"}
+                        </span>
+                        <p className="mt-1 break-words text-sm font-semibold text-ink">
+                          {course.title}
+                        </p>
+                      </div>
+                      <span className="shrink-0 text-sm font-semibold tabular-nums text-maroon">
+                        {formatStudyTime(course.seconds)}
+                      </span>
+                    </div>
+                    {course.taskSeconds.size > 0 && (
+                      <details className="mt-2">
+                        <summary className="min-h-8 text-xs text-ink-muted">
+                          Study and task time
+                        </summary>
+                        {course.directSeconds > 0 && (
+                          <div className="mt-2 flex justify-between gap-4 text-xs text-ink-muted">
+                            <span>Course study</span>
+                            <span className="shrink-0">
+                              {formatStudyTime(course.directSeconds)}
+                            </span>
+                          </div>
+                        )}
+                        {[...course.taskSeconds].map(([id, task]) => (
+                          <div
+                            key={id}
+                            className="mt-2 flex justify-between gap-4 text-xs text-ink-muted"
+                          >
+                            <span className="min-w-0 break-words">
+                              {task.title}
+                            </span>
+                            <span className="shrink-0">
+                              {formatStudyTime(task.seconds)}
+                            </span>
+                          </div>
+                        ))}
+                      </details>
+                    )}
+                  </div>
+                ))}
+                {!summary.sessions && (
+                  <p className="text-sm text-ink-muted">
+                    No study time recorded this week.
+                  </p>
+                )}
+              </div>
+            </>
+          )}
         </article>
       </div>
+
+      <aside className="flex min-w-0 flex-col gap-7 lg:col-span-4">
+        <article className="aksara-card rounded-[2rem] p-6">
+          <div className="flex items-center justify-between">
+            <h2 className="text-lg font-semibold text-ink">Today’s focus</h2>
+            <Clock className="size-4 text-maroon-soft" aria-hidden="true" />
+          </div>
+          <p className="aksara-serif mt-5 text-[2.8rem] leading-none text-maroon">
+            {formatStudyTime(todaySummary.totalSeconds)}
+          </p>
+          <p className="mt-2 text-sm text-ink-soft">
+            {todaySummary.sessions} session
+            {todaySummary.sessions === 1 ? "" : "s"} completed
+          </p>
+          <div className="mt-5 space-y-3 border-t border-line pt-4">
+            {todaySummary.courses.map((course) => (
+              <div
+                key={course.key}
+                className="flex justify-between gap-3 text-sm"
+              >
+                <span className="min-w-0 break-words text-ink-muted">
+                  {course.title}
+                </span>
+                <span className="shrink-0 tabular-nums text-ink">
+                  {formatStudyTime(course.seconds)}
+                </span>
+              </div>
+            ))}
+          </div>
+        </article>
+        <article className="aksara-card rounded-[2rem] p-6">
+          <div className="flex items-center justify-between">
+            <h2 className="text-lg font-semibold text-ink">Recent study</h2>
+            <Timer className="size-4 text-maroon-soft" aria-hidden="true" />
+          </div>
+          <div className="mt-3 divide-y divide-line">
+            {recent.map((log) => {
+              const course = courseForLog(log, tasks, courses);
+              return (
+                <div key={log.id} className="py-4">
+                  <div className="flex items-start justify-between gap-3">
+                    <p className="min-w-0 break-words text-sm font-semibold text-ink">
+                      {course.title}
+                    </p>
+                    <span className="shrink-0 text-xs tabular-nums text-maroon">
+                      {formatStudyTime(log.duration)}
+                    </span>
+                  </div>
+                  <p className="mt-1 break-words text-xs text-ink-muted">
+                    {course.taskTitle || "Course study"}
+                  </p>
+                  <p className="mt-1 text-xs text-ink-soft">
+                    {new Date(log.createdAt).toLocaleDateString("en-GB", {
+                      day: "numeric",
+                      month: "short",
+                    })}{" "}
+                    ·{" "}
+                    {log.timerStyle === "stopwatch" ? "Stopwatch" : "Pomodoro"}
+                  </p>
+                </div>
+              );
+            })}
+            {!recent.length && (
+              <p className="py-4 text-sm text-ink-muted">
+                Your saved study sessions will appear here.
+              </p>
+            )}
+          </div>
+        </article>
+      </aside>
     </div>
   );
 }

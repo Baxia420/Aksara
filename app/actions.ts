@@ -23,8 +23,9 @@ export {
 } from "@/app/actions/push";
 
 export {
-  logFocusSession,
   updateReminderPreferences,
   signOutUser,
   updateProfile,
 } from "@/app/actions/account";
+
+export { logFocusSession, loadFocusWeek } from "@/app/actions/focus";

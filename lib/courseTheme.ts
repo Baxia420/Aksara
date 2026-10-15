@@ -23,12 +23,12 @@ export const courseTints = [
 ];
 
 export const courseBarColors = [
-  "bg-[#c4607e]",
-  "bg-[#d89c45]",
-  "bg-[#4e8db5]",
-  "bg-[#6279b8]",
-  "bg-[#8c7d46]",
-  "bg-[#c08f2a]",
+  "bg-[var(--pill-0-fg)]",
+  "bg-[var(--pill-1-fg)]",
+  "bg-[var(--pill-2-fg)]",
+  "bg-[var(--pill-3-fg)]",
+  "bg-[var(--pill-4-fg)]",
+  "bg-[var(--pill-5-fg)]",
 ];
 
 export function pillClassForIndex(colorIndex: number): string {

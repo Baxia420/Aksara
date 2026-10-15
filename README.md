@@ -12,7 +12,12 @@ Tailwind CSS v4, and Supabase.
 - **Tasks** — filterable sprint board (pending / group / urgent / done) with
   inline complete and edit.
 - **Courses** — explicit course list with per-course color theming.
-- **Focus** — Pomodoro timer with per-task/per-course weekly time breakdown.
+- **Focus** — study a course directly, optionally link one of its tasks, and use
+  Pomodoro or stopwatch mode. Weekly totals include both kinds of study once,
+  exclude breaks, and stay browsable by week. Running and unsaved sessions survive
+  navigation and reload on the same device.
+- **Course study** — course cards show time studied this week and open Focus with
+  that course selected. No topic entry or assignment is required.
 - **Semesters** — per-user terms; the dashboard scopes to the active term and
   finished semesters stay browsable from Settings.
 - **Push reminders** — installable PWA with deadline notifications delivered
@@ -82,6 +87,7 @@ Tailwind CSS v4, and Supabase.
 - `npm run build` — production build
 - `npm run start` — serve the production build
 - `npm run lint` — run ESLint
+- `npm test` — study accounting, timer recovery, and session validation tests
 
 ## Database
 
@@ -93,6 +99,15 @@ Schema changes are plain SQL files in `supabase/migrations/`, run manually in
 the Supabase SQL editor (there is no migration runner). Write them to be
 idempotent, and write app code to degrade gracefully when a migration hasn't
 run yet — deploys and migrations should be safe in either order.
+
+For course study, run `20260720_semesters.sql` first if it has not already been
+applied, then `20261015_course_study.sql`. The second migration preserves existing
+task attribution, adds course attribution and retry IDs, and keeps study history
+when a task or course is removed. Both files are safe to re-run. Until this update
+is applied, new study saves show an error and retain the session on the device for
+retry; they are never silently downgraded to unattributed time.
+
+See [course study behavior and validation](docs/course-study.md).
 
 ## Reminders pipeline
 

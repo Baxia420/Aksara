@@ -1,7 +1,8 @@
 "use client";
 
 import { useRouter } from "next/navigation";
-import { use, useEffect, useMemo, useState, useTransition, useCallback } from "react";
+import { use, useEffect, useMemo, useState, useTransition, useCallback, useSyncExternalStore } from "react";
+import DashboardLoading from "./loading";
 import { toggleTaskCompletion, signOutUser } from "@/app/actions";
 import { AddTaskModal } from "@/components/AddTaskModal";
 import { ManageCoursesModal } from "@/components/ManageCoursesModal";
@@ -15,6 +16,9 @@ import {
   Timer,
 } from "lucide-react";
 import { FocusTimerView } from "@/components/FocusTimerView";
+import { CourseStudySummary } from "@/components/dashboard/CourseStudySummary";
+import { useStudyTimer } from "@/lib/useStudyTimer";
+import { addDays, studySummary, weekStart } from "@/lib/study";
 import { useDashboardDataPromise } from "@/components/dashboard/DashboardDataProvider";
 import { BrandGlyph, BrandLockup } from "@/components/dashboard/Brand";
 import { CalendarWidget } from "@/components/dashboard/CalendarWidget";
@@ -50,6 +54,8 @@ import {
 } from "@/lib/dateUtils";
 
 type CourseCard = {
+  id: string | null;
+  weeklyStudySeconds: number;
   code: string;
   nextDueLabel: string;
   pendingTasks: number;
@@ -84,7 +90,12 @@ const desktopSidebar = [
   title: string;
 }>;
 
+const subscribeHydration = () => () => {};
+
 export default function DashboardPage() {
+  // Browser-local dates and week boundaries must not hydrate against the
+  // hosting server's timezone (which may be different from the student's).
+  const hydrated = useSyncExternalStore(subscribeHydration, () => true, () => false);
   const router = useRouter();
   // Tabs are in-page client state (not routes) so switching is instant and only
   // the initial dashboard load shows a loading screen.
@@ -137,6 +148,19 @@ export default function DashboardPage() {
   const [, startTransition] = useTransition();
 
   const refresh = useCallback(() => router.refresh(), [router]);
+  const onStudySaved = useCallback((log: FocusLog) => {
+    setFocusLogs(logs => [log, ...logs.filter(previous => previous.id !== log.id && (!log.sessionId || previous.sessionId !== log.sessionId))]);
+    refresh();
+  }, [refresh]);
+  // Owned by the page, so changing tabs or the desktop/mobile breakpoint does
+  // not unmount a running timer. Device storage also restores it after reload.
+  const studyTimer = useStudyTimer(userProfile?.email || "signed-out", onStudySaved);
+  const startCourseStudy = (code: string) => {
+    const course = courses.find(course => course.code === code);
+    const legacyTask = course ? null : tasks.find(task => task.courseCode === code);
+    studyTimer.selectCourse(course?.id || null, legacyTask?.id || null);
+    setView("focus");
+  };
   const openSettings = useCallback(() => router.push("/dashboard/settings"), [router]);
 
   const handleLogout = useCallback(async () => {
@@ -186,9 +210,12 @@ export default function DashboardPage() {
   );
 
   const courseCards = useMemo(() => {
+    const monday = weekStart(currentTime);
+    const weeklyStudy = studySummary(focusLogs, tasks, courses, monday, addDays(monday, 7));
     const grouped = new Map<
       string,
       {
+        id: string | null;
         code: string;
         nextDueIso: string;
         nextDueLabel: string;
@@ -202,6 +229,7 @@ export default function DashboardPage() {
     // Initialize with explicit courses
     courses.forEach((course) => {
       grouped.set(course.code, {
+        id: course.id,
         code: course.code,
         nextDueIso: "9999-12-31",
         nextDueLabel: "No tasks",
@@ -219,6 +247,7 @@ export default function DashboardPage() {
       if (!existing) {
         // Fallback for unmigrated tasks
         grouped.set(task.courseCode, {
+          id: null,
           code: task.courseCode,
           nextDueIso: task.dueDateIso,
           nextDueLabel,
@@ -245,10 +274,11 @@ export default function DashboardPage() {
       .sort((left, right) => left.code.localeCompare(right.code))
       .map((course) => ({
         ...course,
+        weeklyStudySeconds: weeklyStudy.courses.find(group => group.key === (course.id || course.code))?.seconds || 0,
         pillClassName: coursePillClasses[course.colorIndex % coursePillClasses.length],
         tint: courseTints[course.colorIndex % courseTints.length],
       })) satisfies CourseCard[];
-  }, [tasks, courses]);
+  }, [tasks, courses, focusLogs, currentTime]);
 
   const courseStyles = useMemo(() => {
     return new Map(
@@ -303,18 +333,13 @@ export default function DashboardPage() {
     startOfWeek.setDate(diff);
     startOfWeek.setHours(0, 0, 0, 0);
 
-    const weeklyLogs = focusLogs.filter((log) => {
-      const logDate = new Date(log.createdAt);
-      return logDate >= startOfWeek && log.type === "focus";
-    });
-
-    const totalSeconds = weeklyLogs.reduce((sum, log) => sum + log.duration, 0);
+    const totalSeconds = studySummary(focusLogs, tasks, courses, startOfWeek, addDays(startOfWeek, 7)).totalSeconds;
     const totalMinutes = Math.floor(totalSeconds / 60);
     const hours = Math.floor(totalMinutes / 60);
     const minutes = totalMinutes % 60;
 
     return { hours, minutes };
-  }, [focusLogs, currentTime]);
+  }, [focusLogs, currentTime, tasks, courses]);
 
   const velocityData = useMemo(() => {
     const days = [];
@@ -461,8 +486,14 @@ export default function DashboardPage() {
     setView(next);
   };
 
+  if (!hydrated) return <DashboardLoading />;
+
   return (
     <main className="min-h-screen px-4 py-4 lg:px-6 lg:py-6">
+      {studyTimer.active && view !== "focus" && <div className="aksara-soft-card mx-auto mb-4 flex max-w-[100rem] flex-wrap items-center justify-between gap-3 px-5 py-3" role="status">
+        <p className="text-sm text-ink-muted">{studyTimer.state.pending ? "Study session waiting to save" : studyTimer.running ? "Study timer is running" : "Study timer paused"}</p>
+        <button type="button" onClick={() => setView("focus")} className="min-h-11 text-sm font-semibold text-maroon">Return to Focus</button>
+      </div>}
       <AddTaskModal isOpen={isModalOpen} onClose={() => { setIsModalOpen(false); setTaskToEdit(null); refresh(); }} tasks={tasks} courses={courses} taskToEdit={taskToEdit} />
       <ManageCoursesModal isOpen={isManageCoursesOpen} onClose={() => { setIsManageCoursesOpen(false); refresh(); }} onRefresh={refresh} courses={courses} />
       {taskToConfirm && (
@@ -627,7 +658,7 @@ export default function DashboardPage() {
                       <span className="aksara-serif text-[2.8rem] font-bold text-maroon leading-none">
                         {weeklyFocusStats.hours}h {weeklyFocusStats.minutes}m
                       </span>
-                      <p className="text-xs text-ink-soft font-semibold mt-1">Accumulated from Pomodoro sessions</p>
+                      <p className="text-xs text-ink-soft font-semibold mt-1">Course study and task sessions</p>
                     </div>
 
                     {/* Right: Velocity Sparkline */}
@@ -667,7 +698,7 @@ export default function DashboardPage() {
                     </button>
                   </div>
 
-                  <div className="mt-6 grid grid-cols-6 gap-3">
+                  <div className="mt-6 grid grid-cols-2 gap-3 xl:grid-cols-3 2xl:grid-cols-4">
                     {courseCards.map((course) => (
                       <article
                         key={course.code}
@@ -685,6 +716,7 @@ export default function DashboardPage() {
                         <p className="mt-1 text-sm text-ink-soft">
                           Next due: {course.nextDueLabel}
                         </p>
+                        <CourseStudySummary seconds={course.weeklyStudySeconds} onStudy={() => startCourseStudy(course.code)} disabled={!studyTimer.ready || (studyTimer.active && studyTimer.state.courseId !== course.id)} />
                       </article>
                     ))}
                   </div>
@@ -975,7 +1007,7 @@ export default function DashboardPage() {
                     </div>
                   </article>
 
-                  <div className="grid grid-cols-4 gap-5">
+                  <div className="grid grid-cols-2 gap-5 xl:grid-cols-3 2xl:grid-cols-4">
                     {courseCards.map((course) => (
                       <article
                         key={course.code}
@@ -993,6 +1025,7 @@ export default function DashboardPage() {
                         <p className="mt-2 text-sm font-semibold text-maroon-soft">
                           Next due: {course.nextDueLabel}
                         </p>
+                        <CourseStudySummary seconds={course.weeklyStudySeconds} onStudy={() => startCourseStudy(course.code)} disabled={!studyTimer.ready || (studyTimer.active && studyTimer.state.courseId !== course.id)} />
                       </article>
                     ))}
                   </div>
@@ -1000,7 +1033,7 @@ export default function DashboardPage() {
               ) : null}
 
               {view === "focus" && isDesktop ? (
-                <FocusTimerView tasks={tasks} courses={courses} focusLogs={focusLogs} onRefresh={refresh} />
+                <FocusTimerView tasks={tasks} courses={courses} focusLogs={focusLogs} timer={studyTimer} />
               ) : null}
             </div>
           </div>
@@ -1330,6 +1363,7 @@ export default function DashboardPage() {
                       <p className="mt-1 text-sm text-ink-soft">
                         Next due: {course.nextDueLabel}
                       </p>
+                      <CourseStudySummary seconds={course.weeklyStudySeconds} onStudy={() => startCourseStudy(course.code)} disabled={!studyTimer.ready || (studyTimer.active && studyTimer.state.courseId !== course.id)} />
                     </article>
                   ))}
                 </div>
@@ -1340,7 +1374,7 @@ export default function DashboardPage() {
           {view === "focus" ? (
             <section>
               <MobileTopBar
-                meta="Focus pomodoro timer"
+                meta="Course study / Focus"
                 title="Focus"
                 accent="timer."
                 userProfile={userProfile}
@@ -1349,7 +1383,7 @@ export default function DashboardPage() {
               />
               <div className="mt-7">
                 {!isDesktop ? (
-                  <FocusTimerView tasks={tasks} courses={courses} focusLogs={focusLogs} onRefresh={refresh} />
+                  <FocusTimerView tasks={tasks} courses={courses} focusLogs={focusLogs} timer={studyTimer} />
                 ) : null}
               </div>
             </section>

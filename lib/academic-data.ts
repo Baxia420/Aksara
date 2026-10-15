@@ -12,6 +12,7 @@ import type {
   UserProfile,
 } from "@/lib/types";
 import { DEFAULT_REMINDER_PREFERENCES } from "@/lib/types";
+import { mapFocusLog } from "@/lib/study";
 
 /**
  * Fetches everything the dashboard needs (profile, tasks, courses, focus logs)
@@ -150,23 +151,15 @@ export const getDashboardData = cache(async (): Promise<DashboardData | null> =>
   const ninetyDaysAgo = new Date();
   ninetyDaysAgo.setDate(ninetyDaysAgo.getDate() - 90);
 
-  const { data: focusLogsData, error: focusLogsError } = await supabase
-    .from("focus_logs")
-    .select("*")
-    .eq("user_id", user.id)
-    .gte("created_at", ninetyDaysAgo.toISOString())
-    .order("created_at", { ascending: false });
-
-  if (focusLogsError) throw focusLogsError;
-
-  const focusLogs: FocusLog[] = (focusLogsData ?? []).map((log) => ({
-    id: log.id,
-    userId: log.user_id,
-    taskId: log.task_id,
-    duration: log.duration,
-    type: log.type,
-    createdAt: log.created_at,
-  }));
+  const focusLogs: FocusLog[] = [];
+  for (let offset = 0; ; offset += 1000) {
+    const { data, error } = await supabase.from("focus_logs").select("*")
+      .eq("user_id", user.id).gte("created_at", ninetyDaysAgo.toISOString())
+      .order("created_at", { ascending: false }).order("id").range(offset, offset + 999);
+    if (error) throw error;
+    focusLogs.push(...(data || []).map(mapFocusLog));
+    if (!data || data.length < 1000) break;
+  }
 
   const firstName =
     user.user_metadata?.first_name ||
